@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片查看</title>
+    <!-- 本地资源 -->
+    <link href="/assets/css/tailwind.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+PHN2ZyB0PSIxNzU4NDQ1ODI1NTUwIiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjU0MDM5IiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik00OCA4NzMuNmE0NjQgMTIxLjYgMCAxIDAgOTI4IDAgNDY0IDEyMS42IDAgMSAwLTkyOCAwWiIgZmlsbD0iI0RBRTlGRiIgcC1pZD0iNTQwNDAiPjwvcGF0aD48cGF0aCBkPSJNNzg0IDg1My42SDI0MGMtNTIuOCAwLTk2LTQzLjItOTYtOTZWMjEyLjhjMC01Mi44IDQzLjItOTYgOTYtOTZoNTQ0YzUyLjggMCA5NiA0My4yIDk2IDk2djU0NC44YzAgNTIuOC00My4yIDk2LTk2IDk2eiIgZmlsbD0iIzFEODVEQiIgcC1pZD0iNTQwNDEiPjwvcGF0aD48cGF0aCBkPSJNNzg0IDgyMC44SDI0MGMtNTIuOCAwLTk2LTQzLjItOTYtOTZWMTM0LjRjMC01Mi44IDQzLjItOTYgOTYtOTZoNTQ0YzUyLjggMCA5NiA0My4yIDk2IDk2djU4OS42YzAgNTMuNi00My4yIDk2LjgtOTYgOTYuOHoiIGZpbGw9IiM0NTlERjUiIHAtaWQ9IjU0MDQyIj48L3BhdGg+PHBhdGggZD0iTTc1MiAyNzJINDUyYy0xNi44IDAtMzAuNC0xMy42LTMwLjQtMzAuNHYtMjhjMC0xNi44IDEzLjYtMzAuNCAzMC40LTMwLjRINzUyYzE2LjggMCAzMC40IDEzLjYgMzAuNCAzMC40djI4Qzc4MS42IDI1OS4yIDc2OCAyNzIgNzUyIDI3MnoiIGZpbGw9IiNEQUU5RkYiIHAtaWQ9IjU0MDQzIj48L3BhdGg+PHBhdGggZD0iTTc0OCAyNjMuMkg0NDYuNGMtMTYuOCAwLTMwLjQtMTMuNi0zMC40LTMwLjR2LTI5LjZjMC0xNi44IDEzLjYtMzAuNCAzMC40LTMwLjRoMzAxLjZjMTYuOCAwIDMwLjQgMTMuNiAzMC40IDMwLjR2MjkuNmMtMC44IDE2LjgtMTMuNiAzMC40LTMwLjQgMzAuNHoiIGZpbGw9IiNGRkZGRkYiIHAtaWQ9IjU0MDQ0Ij48L3BhdGg+PHBhdGggZD0iTTc1MiA0NzkuMkg0NTJjLTE2LjggMC0zMC40LTEzLjYtMzAuNC0zMC40di0yOGMwLTE2LjggMTMuNi0zMC40IDMwLjQtMzAuNEg3NTJjMTYuOCAwIDMwLjQgMTMuNiAzMC40IDMwLjR2MjhjLTAuOCAxNi44LTE0LjQgMzAuNC0zMC40IDMwLjR6IiBmaWxsPSIjREFFOUZGIiBwLWlkPSI1NDA0NSI+PC9wYXRoPjxwYXRoIGQ9Ik03NDIuNCA0NjguOGgtMjk2Yy0xNi44IDAtMzAuNC0xMy42LTMwLjQtMzAuNHYtMjhjMC0xNi44IDEzLjYtMzAuNCAzMC40LTMwLjRoMjk2LjhjMTYuOCAwIDMwLjQgMTMuNiAzMC40IDMwLjR2MjhjLTAuOCAxNi44LTE0LjQgMzAuNC0zMS4yIDMwLjR6IiBmaWxsPSIjRkZGRkZGIiBwLWlkPSI1NDA0NiI+PC9wYXRoPjxwYXRoIGQ9Ik03NTIgNjg1LjYgNDUyYy0xNi44IDAtMzAuNC0xMy42LTMwLjQtMzAuNHYtMjhjMC0xNi44IDEzLjYtMzAuNCAzMC40LTMwLjRINzUyYzE2LjggMCAzMC40IDEzLjYgMzAuNCAzMC40djI4Yy0wLjggMTYuOC0xNC40IDMwLjQtMzAuNCAzMC40eiIgZmlsbD0iI0RBRTlGRiIgcC1pZD0iNTQwNDciPjwvcGF0aD48cGF0aCBkPSJNNzQyLjQgNjc1LjJoLTI5NmMtMTYuOCAwLTMwLjQtMTMuNi0zMC40LTMwLjR2LTI4YzAtMTYuOCAxMy42LTMwLjQgMzAuNC0zMC40aDI5Ni44YzE2LjggMCAzMC40IDEzLjYgMzAuNCAzMC40djI4Yy0wLjggMTYuOC0xNC40IDMAuNC0zMS4yIDMwLjR6IiBmaWxsPSIjRkZGRkZGIiBwLWlkPSI1NDA0OCI+PC9wYXRoPjxwYXRoIGQ9Ik0zMDIuNCAyNzJoLTM0LjRjLTEzLjYgMC0yNC44LTExLjItMjQuOC0yNC44di0zOC40YzAtMTMuNiAxMS4yLTI0LjggMjQuOC0yNC44aDM0LjRjMTMuNiAwIDI0LjggMTEuMiAyNC44IDI0Ljh2MzguNGMwIDEzLjYtMTEuMiAyNC44LTI0LjggMjQuOHoiIGZpbGw9IiNEQUU5RkYiIHAtaWQ9IjU0MDQ5Ij48L3BhdGg+PHBhdGggZD0iTTMwMS42IDI2My4yaC0zNC40Yy0xMy42IDAtMjQuOC0xMS4yLTI0LjgtMjQuOHYtNDBjMC0xMy42IDExLjItMjQuOCAyNC44LTI0LjhoMzQuNGMxMy42IDAgMjQuOCAxMS4yIDI0LjggMjQuOHY0MGMwIDEzLjYtMTEuMiAyNC44LTI0LjggMjQuOHoiIGZpbGw9IiNGRkZGRkYiIHAtaWQ9IjU0MDUwIj48L3BhdGg+PHBhdGggZD0iTTMwMi40IDQ3OS4yaC0zNC40Yy0xMy42IDAtMjQuOC0xMS4yLTI0LjgtMjQuOFY0MTZjMC0xMy42IDExLjItMjQuOCAyNC44LTI0LjhoMzQuNGMxMy42IDAgMjQuOCAxMS4yIDI0LjggMjQuOHYzOC40YzAtMTMuNi0xMS4yLTI0LjgtMjQuOC0yNC44eiIgZmlsbD0iI0RBRTlGRiIgcC1pZD0iNTQwNTEiPjwvcGF0aD48cGF0aCBkPSJNMzAwLjggNDY4LjhoLTMzLjZjLTEzLjYgMC0yNC44LTExLjItMjQuOC0yNC44di0zOS4yYzAtMTMuNiAxMS4yLTI0LjggMjQuOC0yNC44aDMzLjZjMTMuNiAwIDI0LjggMTEuMiAyNC44IDI0Ljh2MzkuMmMwIDEzLjYtMTEuMiAyNC44LTI0LjggMjQuOHoiIGZpbGw9IiNGRkZGRkYiIHAtaWQ9IjU0MDUyIj48L3BhdGg+PHBhdGggZD0iTTMwMi40IDY4NS42aC0zNC40Yy0xMy42IDAtMjQuOC0xMS4yLTI0LjgtMjQuOHYtMzguNGMwLTEzLjYgMTEuMi0yNC44IDI0LjgtMjQuOGgzNC40YzEzLjYgMCAyNC44IDExLjIgMjQuOCAyNC44djM4LjRjMCAxMy42LTExLjIgMjQuOC0yNC44IDI0Ljh6IiBmaWxsPSIjREFFOUZGIiBwLWlkPSI1NDA1MyI+PC9wYXRoPjxwYXRoIGQ9Ik0zMDAuOCA2NzUuMmgtMzMuNmMtMTMuNiAwLTI0LjgtMTEuMi0yNC44LTI0Ljh2LTM5LjJjMC0xMy42IDExLjItMjQuOCAyNC44LTI0LjhoMzMuNmMxMy42IDAgMjQuOCAxMS4yIDI0LjggMjQuOHYzOS4yYzAtMTMuNi0xMS4yLTI0LjgtMjQuOC0yNC44eiIgZmlsbD0iI0ZGRkZGRiIgcC1pZD0iNTQwNTQiPjwvcGF0aD48L3N2Zz4=" type="image/svg+xml">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        dark: {
+                            100: '#1D2129',
+                            200: '#141414',
+                            300: '#0F0F0F'
+                        },
+                        light: {
+                            100: '#F2F3F5',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+    :root{
+        --bg: #0b0b0c;
+        --panel: rgba(0,0,0,0.6);
+        --text: #fff;
+        --muted: #bbb;
+        --accent: #165DFF;
+    }
+    .theme-light{
+        --bg: #ffffff;
+        --panel: rgba(255,255,255,0.95);
+        --text: #111827;
+        --muted: #6b7280;
+        --accent: #165DFF;
+    }
+    html,body{height:100%;}
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing:antialiased;
+    }
+    .picture-container {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        background: transparent;
+    }
+    .picture-wrapper {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        overflow: auto;
+    }
+    .picture-viewer {
+        max-width: calc(100% - 2rem);
+        max-height: calc(100% - 2rem - 64px);
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        user-select: none;
+        transition: transform 200ms ease;
+        box-shadow: 0 8px 30px rgba(2,6,23,0.5);
+        border-radius: 8px;
+        background: #000;
+    }
+    .controls-bar{
+        height: 64px;
+        display:flex;
+        align-items:center;
+        gap:0.5rem;
+        padding:0 1rem;
+        background: var(--panel);
+        backdrop-filter: blur(6px);
+    }
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;border-radius:8px;padding:0.5rem 0.75rem;font-weight:600;cursor:pointer;border:1px solid transparent}
+    .btn i{font-size:1rem}
+    .icon-btn{width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center}
+    .btn-primary{background:var(--accent);color:#fff}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.06)}
+    .muted{color:var(--muted);font-weight:500}
+    .info-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .zoom-info{font-size:0.9rem;color:var(--muted)}
+
+    @media (max-width:768px){
+        .picture-viewer{max-width:calc(100% - 1rem);max-height:calc(100% - 1rem - 56px);border-radius:4px}
+        .controls-bar{height:56px;padding:0 0.5rem}
+        .btn{padding:0.45rem 0.6rem;border-radius:6px}
+    }
+    </style>
+</head>
+<body>
+    <div class="picture-container">
+        <div class="picture-wrapper">
+            <img id="picture" class="picture-viewer" src="" alt="图片">
+        </div>
+        <div class="controls-bar">
+            <button id="close-btn" class="btn icon-btn btn-ghost" title="关闭">
+                <i class="fa fa-times"></i>
+            </button>
+            <div class="info-text" id="picture-name">未加载</div>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+                <button id="zoom-out" class="btn icon-btn btn-ghost" title="缩小"><i class="fa fa-search-minus"></i></button>
+                <button id="zoom-reset" class="btn icon-btn btn-ghost" title="重置"><i class="fa fa-refresh"></i></button>
+                <button id="zoom-in" class="btn icon-btn btn-ghost" title="放大"><i class="fa fa-search-plus"></i></button>
+                <div class="zoom-info" id="zoom-info">100%</div>
+                <button id="download-btn" class="btn btn-primary" title="下载"><i class="fa fa-download"></i></button>
+                <button id="theme-toggle" class="btn icon-btn btn-ghost" title="切换主题"><i class="fa fa-adjust"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentZoom = 100;
+        const zoomStep = 10;
+        const maxZoom = 300;
+        const minZoom = 10;
+        const pictureElement = document.getElementById('picture');
+        const zoomInfoElement = document.getElementById('zoom-info');
+
+        // 从URL参数读取路径和文件名
+        const urlParams = new URLSearchParams(window.location.search);
+        let filePath = urlParams.get('path') || '';
+        const fileName = urlParams.get('name') || '未命名';
+        const password = urlParams.get('password') || '';
+
+        // 解码URL编码的参数
+        try {
+            if (filePath) {
+                filePath = decodeURIComponent(filePath);
+            }
+        } catch (e) {
+            console.error('URL解码失败:', e);
+        }
+
+        // 显示文件名
+        document.getElementById('picture-name').textContent = decodeURIComponent(fileName);
+
+        // 加载图片
+        function loadPicture() {
+            if (!filePath) {
+                pictureElement.src = '';
+                return;
+            }
+
+            let url = `/api/cloud/download?path=${encodeURIComponent(filePath)}`;
+            if (password) {
+                url += `&password=${encodeURIComponent(password)}`;
+            }
+            pictureElement.src = url;
+
+            // 重置缩放
+            currentZoom = 100;
+            updateZoom();
+        }
+
+        // 更新缩放显示
+        function updateZoom() {
+            pictureElement.style.transform = `scale(${currentZoom / 100})`;
+            zoomInfoElement.textContent = `${currentZoom}%`;
+        }
+
+        // 关闭按钮：尝试后退，失败则返回主页或向父窗口发送消息
+        document.getElementById('close-btn').addEventListener('click', () => {
+            try {
+                if (window.history && window.history.length > 1) {
+                    window.history.back();
+                    // 如果在 200ms 内没有导航，可跳回首页作为兜底
+                    setTimeout(()=>{
+                        if (!document.hidden) window.location.href = '/';
+                    }, 400);
+                } else if (window.opener) {
+                    window.close();
+                } else {
+                    // 如果被嵌在 iframe 中，尝试发送消息给父窗口
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'player-close' }, '*');
+                    }
+                    window.location.href = '/';
+                }
+            } catch (e) {
+                window.location.href = '/';
+            }
+        });
+
+        // 鼠标滚轮缩放
+        document.querySelector('.picture-wrapper').addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                // 向上滚动，放大
+                currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+            } else {
+                // 向下滚动，缩小
+                currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+            }
+            updateZoom();
+        });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.history.back();
+            } else if (e.key === '+' || e.key === '=') {
+                currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+                updateZoom();
+            } else if (e.key === '-') {
+                currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+                updateZoom();
+            } else if (e.key === '0') {
+                currentZoom = 100;
+                updateZoom();
+            }
+        });
+
+        // 主题支持：使用 theme-dark / theme-light 类
+        (function initTheme(){
+            const saved = localStorage.getItem('theme');
+            if(saved === 'light'){
+                document.documentElement.classList.add('theme-light');
+            } else if(saved === 'dark'){
+                document.documentElement.classList.remove('theme-light');
+            } else {
+                if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches){
+                    document.documentElement.classList.add('theme-light');
+                }
+            }
+            const btn = document.getElementById('theme-toggle');
+            if(btn){
+                btn.addEventListener('click', ()=>{
+                    const isLight = document.documentElement.classList.toggle('theme-light');
+                    localStorage.setItem('theme', isLight? 'light':'dark');
+                });
+            }
+        })();
+
+        // 下载按钮
+        const downloadBtn = document.getElementById('download-btn');
+        downloadBtn.addEventListener('click', ()=>{
+            if(!filePath) return;
+            const a = document.createElement('a');
+            a.href = `/api/cloud/download?path=${encodeURIComponent(filePath)}${password? '&password='+encodeURIComponent(password):''}`;
+            a.download = decodeURIComponent(fileName) || '';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+
+        // 页面加载完成后加载图片
+        window.addEventListener('load', () => {
+            loadPicture();
+        });
+
+        // 控件事件
+        document.getElementById('zoom-in').addEventListener('click', ()=>{ currentZoom = Math.min(currentZoom+zoomStep, maxZoom); updateZoom(); });
+        document.getElementById('zoom-out').addEventListener('click', ()=>{ currentZoom = Math.max(currentZoom-zoomStep, minZoom); updateZoom(); });
+        document.getElementById('zoom-reset').addEventListener('click', ()=>{ currentZoom = 100; updateZoom(); });
+    </script>
+</body>
+</html>

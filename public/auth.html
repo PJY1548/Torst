@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>身份验证</title>
+    <!-- 本地资源 -->
+    <link href="/assets/css/tailwind.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+PHN2ZyB0PSIxNzU4NDQ1ODI1NTUwIiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjU0MDM5IiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik00OCA4NzMuNmE0NjQgMTIxLjYgMCAxIDAgOTI4IDAgNDY0IDEyMS42IDAgMSAwLTkyOCAwWiIgZmlsbD0iI0RBRTlGRiIgcC1pZD0iNTQwNDAiPjwvcGF0aD48cGF0aCBkPSJNNzg0IDg1My42SDI0MGMtNTIuOCAwLTk2LTQzLjItOTYtOTZWMjEyLjhjMC01Mi44IDQzLjItOTYgOTYtOTZoNTQ0YzUyLjggMCA5NiA0My4yIDk2IDk2djU0NC44YzAgNTIuOC00My4yIDk2LTk2IDk2eiIgZmlsbD0iIzFEODVEQiIgcC1pZD0iNTQwNDEiPjwvcGF0aD48cGF0aCBkPSJNNzg0IDgyMC44SDI0MGMtNTIuOCAwLTk2LTQzLjItOTYtOTZWMTM0LjRjMC01Mi44IDQzLjItOTYgOTYtOTZoNTQ0YzUyLjggMCA5NiA0My4yIDk2IDk2djU4OS42YzAgNTMuNi00My4yIDk2LjgtOTYgOTYuOHoiIGZpbGw9IiM0NTlERjUiIHAtaWQ9IjU0MDQyIj48L3BhdGg+PHBhdGggZD0iTTc1MiAyNzJINDUyYy0xNi44IDAtMzAuNC0xMy42LTMwLjQtMzAuNHYtMjhjMC0xNi44IDEzLjYtMzAuNCAzMC40LTMwLjRINzUyYzE2LjggMCAzMC40IDEzLjYgMzAuNCAzMC40djI4Qzc4MS42IDI1OS4yIDc2OCAyNzIgNzUyIDI3MnoiIGZpbGw9IiNEQUU5RkYiIHAtaWQ9IjU0MDQzIj48L3BhdGg+PHBhdGggZD0iTTc0OCAyNjMuMkg0NDYuNGMtMTYuOCAwLTMwLjQtMTMuNi0zMC40LTMwLjR2LTI5LjZjMC0xNi44IDEzLjYtMzAuNCAzMC40LTMwLjRoMzAxLjZjMTYuOCAwIDMwLjQgMTMuNiAzMC40IDMwLjR2MjkuNmMtMC44IDE2LjgtMTMuNiAzMC40LTMwLjQgMzAuNHoiIGZpbGw9IiNGRkZGRkYiIHAtaWQ9IjU0MDQ0Ij48L3BhdGg+PHBhdGggZD0iTTc1MiA0NzkuMkg0NTJjLTE2LjggMC0zMC40LTEzLjYtMzAuNC0zMC40di0yOGMwLTE2LjggMTMuNi0zMC40IDMwLjQtMzAuNEg3NTJjMTYuOCAwIDMwLjQgMTMuNiAzMC40IDMwLjR2MjhjLTAuOCAxNi44LTE0LjQgMzAuNC0zMC40IDMwLjR6IiBmaWxsPSIjREFFOUZGIiBwLWlkPSI1NDA0NSI+PC9wYXRoPjxwYXRoIGQ9Ik03NDIuNCA0NjguOGgtMjk2Yy0xNi44IDAtMzAuNC0xMy42LTMwLjQtMzAuNHYtMjhjMC0xNi44IDEzLjYtMzAuNCAzMC40LTMwLjRoMjk2LjhjMTYuOCAwIDMwLjQgMTMuNiAzMC40IDMwLjR2MjhjLTAuOCAxNi44LTE0LjQgMzAuNC0zMS4yIDMwLjR6IiBmaWxsPSIjRkZGRkZGIiBwLWlkPSI1NDA0NiI+PC9wYXRoPjxwYXRoIGQ9Ik03NTIgNjg1LjZINDUyYy0xNi44IDAtMzAuNC0xMy42LTMwLjQtMzAuNHYtMjhjMC0xNi44IDEzLjYtMzAuNCAzMC40LTMwLjRINzUyYzE2LjggMCAzMC40IDEzLjYgMzAuNCAzMC40djI4Yy0wLjggMTYuOC0xNC40IDMwLjQtMzAuNCAzMC40eiIgZmlsbD0iI0RBRTlGRiIgcC1pZD0iNTQwNDciPjwvcGF0aD48cGF0aCBkPSJNNzQyLjQgNjc1LjJoLTI5NmMtMTYuOCAwLTMwLjQtMTMuNi0zMC40LTMwLjR2LTI4YzAtMTYuOCAxMy42LTMwLjQgMzAuNC0zMC40aDI5Ni44YzE2LjggMCAzMC40IDEzLjYgMzAuNCAzMC40djI4Yy0wLjggMTYuOC0xNC40IDMwLjQtMzEuMiAzMC40eiIgZmlsbD0iI0ZGRkZGRiIgcC1pZD0iNTQwNDgiPjwvcGF0aD48cGF0aCBkPSJNMzAyLjQgMjcyaC0zNC40Yy0xMy42IDAtMjQuOC0xMS4yLTI0LjgtMjQuOHYtMzguNGMwLTEzLjYgMTEuMi0yNC44IDI0LjgtMjQuOGgzNC40YzEzLjYgMCAyNC44IDExLjIgMjQuOCAyNC44djM4LjRjMCAxMy42LTExLjIgMjQuOC0yNC44IDI0Ljh6IiBmaWxsPSIjREFFOUZGIiBwLWlkPSI1NDA0OSI+PC9wYXRoPjxwYXRoIGQ9Ik0zMDEuNiAyNjMuMmgtMzQuNGMtMTMuNiAwLTI0LjgtMTEuMi0yNC44LTI0Ljh2LTQwYzAtMTMuNiAxMS4yLTI0LjggMjQuOC0yNC44aDM0LjRjMTMuNiAwIDI0LjggMTEuMiAyNC44IDI0Ljh2NDBjMCAxMy42LTExLjIgMjQuOC0yNC44IDI0Ljh6IiBmaWxsPSIjRkZGRkZGIiBwLWlkPSI1NDA1MCI+PC9wYXRoPjxwYXRoIGQ9Ik0zMDIuNCA0NzkuMmgtMzQuNGMtMTMuNiAwLTI0LjgtMTEuMi0yNC44LTI0LjhWNDE2YzAtMTMuNiAxMS4yLTI0LjggMjQuOC0yNC44aDM0LjRjMTMuNiAwIDI0LjggMTEuMiAyNC44IDI0Ljh2MzguNGMwIDEzLjYtMTEuMiAyNC44LTI0LjggMjQuOHoiIGZpbGw9IiNEQUU5RkYiIHAtaWQ9IjU0MDUxIj48L3BhdGg+PHBhdGggZD0iTTMwMC44IDQ2OC44aC0zMy42Yy0xMy42IDAtMjQuOC0xMS4yLTI0LjgtMjQuOHYtMzkuMmMwLTEzLjYgMTEuMi0yNC44IDI0LjgtMjQuOGgzMy42YzEzLjYgMCAyNC44IDExLjIgMjQuOCAyNC44djM5LjJjMCAxMy42LTExLjIgMjQuOC0yNC44IDI0Ljh6IiBmaWxsPSIjRkZGRkZGIiBwLWlkPSI1NDA1MiI+PC9wYXRoPjxwYXRoIGQ9Ik0zMDIuNCA2ODUuNmgtMzQuNGMtMTMuNiAwLTI0LjgtMTEuMi0yNC44LTI0Ljh2LTM4LjRjMC0xMy42IDExLjItMjQuOCAyNC44LTI0LjhoMzQuNGMxMy42IDAgMjQuOCAxMS4yIDI0LjggMjQuOHYzOC40YzAgMTMuNi0xMS4yIDI0LjgtMjQuOCAyNC44eiIgZmlsbD0iI0RBRTlGRiIgcC1pZD0iNTQwNTMiPjwvcGF0aD48cGF0aCBkPSJNMzAwLjggNjc1LjJoLTMzLjZjLTEzLjYgMC0yNC44LTExLjItMjQuOC0yNC44di0zOS4yYzAtMTMuNiAxMS4yLTI0LjggMjQuOC0yNC44aDMzLjZjMTMuNiAwIDI0LjggMTEuMiAyNC44IDI0Ljh2MzkuMmMwIDEzLjYtMTEuMiAyNC44LTI0LjggMjQuOHoiIGZpbGw9IiNGRkZGRkYiIHAtaWQ9IjU0MDU0Ij48L3BhdGg+PC9zdmc+" type="image/svg+xml">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        dark: {
+                            100: '#1D2129',
+                            200: '#141414',
+                            300: '#0F0F0F'
+                        },
+                        light: {
+                            100: '#F2F3F5',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 页面切换过渡动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        body {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #E5E6EB;
+            background: white;
+            transition: all 300ms;
+        }
+        .dark .input {
+            border-color: #1D2129;
+            background: #1D2129;
+            color: white;
+        }
+        .input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #165DFF;
+            border-color: transparent;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 2.5rem;
+            padding: 0 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 300ms;
+        }
+        .btn-primary {
+            background: #165DFF;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: rgba(22, 93, 255, 0.9);
+        }
+        .btn-outline {
+            border: 1px solid #E5E6EB;
+        }
+        .dark .btn-outline {
+            border-color: #1D2129;
+        }
+        .btn-outline:hover {
+            background: #F2F3F5;
+        }
+        .dark .btn-outline:hover {
+            background: #1D2129;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-light-100 dark:bg-dark-300 flex items-center justify-center p-4">
+    <!-- 主题切换按钮 -->
+    <button id="theme-toggle" class="fixed top-4 right-4 w-10 h-10 rounded-full bg-white dark:bg-dark-200 shadow-lg hover:shadow-xl transition-all-300 flex items-center justify-center hover:scale-110" aria-label="切换主题">
+        <i id="theme-icon-moon" class="fa fa-moon-o text-gray-600" style="display: inline-block;"></i>
+        <i id="theme-icon-sun" class="fa fa-sun-o text-yellow-400" style="display: none;"></i>
+    </button>
+    
+    <div class="bg-white dark:bg-dark-200 rounded-xl shadow-lg w-full max-w-md p-6">
+        <h2 class="text-xl font-bold mb-4 text-center text-gray-800 dark:text-white">身份验证</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center">请输入管理员密码以访问系统功能</p>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300" for="password">管理员密码</label>
+                <input type="password" id="password" class="input" placeholder="请输入密码" autofocus>
+            </div>
+            
+            <div>
+                <button id="auth-btn" class="btn btn-primary w-full">验证</button>
+            </div>
+            
+            <p id="auth-error" class="hidden text-sm text-red-500 text-center mt-2">密码错误，请重试</p>
+        </div>
+    </div>
+
+    <script>
+        // 更新主题图标
+        function updateThemeIcon() {
+            const moonIcon = document.getElementById('theme-icon-moon');
+            const sunIcon = document.getElementById('theme-icon-sun');
+            const isDark = document.documentElement.classList.contains('dark');
+            if (moonIcon && sunIcon) {
+                if (isDark) {
+                    moonIcon.style.display = 'none';
+                    sunIcon.style.display = 'inline-block';
+                } else {
+                    moonIcon.style.display = 'inline-block';
+                    sunIcon.style.display = 'none';
+                }
+            }
+        }
+
+        // 主题切换
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            if (isDark) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+            updateThemeIcon();
+            // 触发自定义事件，通知其他页面
+            window.dispatchEvent(new CustomEvent('themechange', { 
+                detail: { theme: isDark ? 'light' : 'dark' } 
+            }));
+        }
+
+        // 主题初始化
+        (function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                // 根据系统偏好设置
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            }
+            updateThemeIcon();
+            // 监听主题变化事件（从其他页面）
+            window.addEventListener('themechange', (e) => {
+                if (e.detail.theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+                updateThemeIcon();
+            });
+            // 绑定主题切换按钮
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', toggleTheme);
+            }
+        })();
+
+        // 检查是否已登录
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken) {
+            // 验证存储的token是否仍然有效
+            fetch('/api/auth/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: storedToken })
+            }).then(resp => resp.json()).then(data => {
+                if (data.success) {
+                    // 已登录，跳转回主页
+                    const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
+                    window.location.href = returnUrl;
+                }
+            }).catch(() => {
+                // 验证失败，清除token
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('isAuthenticated');
+            });
+        }
+
+        const passwordInput = document.getElementById('password');
+        const authBtn = document.getElementById('auth-btn');
+        const authError = document.getElementById('auth-error');
+
+        // 验证密码
+        async function handleAuth() {
+            const password = passwordInput.value.trim();
+            if (!password) {
+                authError.textContent = '请输入密码';
+                authError.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    // 保存token
+                    localStorage.setItem('authToken', password);
+                    localStorage.setItem('isAuthenticated', '1');
+                    
+                    // 跳转回主页或指定页面
+                    const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
+                    window.location.href = returnUrl;
+                } else {
+                    authError.textContent = '密码错误，请重试';
+                    authError.classList.remove('hidden');
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            } catch (error) {
+                authError.textContent = '验证失败，请重试';
+                authError.classList.remove('hidden');
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        // 事件监听
+        authBtn.addEventListener('click', handleAuth);
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleAuth();
+        });
+    </script>
+</body>
+</html>
+
