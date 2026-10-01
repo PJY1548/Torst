@@ -24,23 +24,7 @@
 - **主题切换** - 浅色/深色/跟随系统
 - **背景图代理** - 集成 [次元API](https://tc.alcy.cc/) 随机动漫壁纸
 - **玻璃拟态 UI** - 毛玻璃导航栏、卡片、模态框
-
-
-## 🚀 快速开始
-### 安装依赖
-```bash
-npm install
-```
-### 配置说明
-```env
-PORT=80
-JWT_SECRET=node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" 
-JWT_EXPIRY=7d
-PASSWORD_HASH=node -e "console.log(require('bcryptjs').hashSync('你的密码', 10))"
-CLOUD_DIR=C:\\Cloud
-```
-#### ⭐ 可通过删除或更改\public\assets\bg\index-bg.webp
-#### ⭐ 实现背景图片或配色的修改
+#### ⭐ 可通过删除或更改\public\assets\bg\index-bg.webp 实现背景图片或配色的修改
 
 ### 媒体目录结构建议
 ```
@@ -82,24 +66,12 @@ Torst/
 └── logs/                      # 运行日志
 ```
 
-## 🔌 API 接口
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/files` | 获取媒体文件列表（支持分类、分页、搜索） |
-| GET | `/api/files/:path` | 获取单个文件信息/流式传输 |
-| GET | `/api/thumbnail/:path` | 获取缩略图（图片/视频/文档） |
-| GET | `/api/lyrics/:path` | 获取歌词文件内容 |
-| GET | `/api/subtitle/:path` | 获取字幕文件内容 |
-| GET | `/api/bg` | 获取随机背景图（代理次元API） |
-| GET | `/api/bg?mobile=1` | 获取移动端背景图 |
 
 ## 🙏 致谢 / 第三方服务
 
 | 服务 | 用途 | 链接 |
 |------|------|------|
 | **次元API** | 随机动漫背景图、每日一句 | [tc.alcy.cc](https://tc.alcy.cc/) |
-| **Bing 每日一图** | 首页备选背景 | [bing.com](https://www.bing.com/) |
 | **DPlayer** | 视频播放器核心 | [github.com/MoePlayer/DPlayer](https://github.com/MoePlayer/DPlayer) |
 | **epub.js** | EPUB 电子书渲染 | [github.com/futurepress/epub.js](https://github.com/futurepress/epub.js) |
 | **PDF.js** | PDF 预览 | [mozilla.github.io/pdf.js](https://mozilla.github.io/pdf.js/) |
