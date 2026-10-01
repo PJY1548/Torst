@@ -66,9 +66,9 @@ cp .env.example .env
 | `PASSWORD_HASH` | **是** | 登录密码的 bcrypt 哈希值 | `$2a$10$...` |
 | `CLOUD_DIR` | **是** | 网盘根目录路径 | `C:\\Cloud`  |
 
-####首次运行会从 [次元API](https://tc.alcy.cc/) 
-下载背景到 \public\assets\bg\index-bg.webp
-如果不满意可以删除进行刷新或替换该文件自定义
+#### 首次运行会从 [次元API](https://tc.alcy.cc/) 
+#### 下载背景到 \public\assets\bg\index-bg.webp
+#### 如果不满意可以删除进行刷新或替换该文件自定义
 
 ### 生成配置值
 
