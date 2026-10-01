@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="web-app-capable" content="yes">
+    <meta name="web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#165DFF">
+    <title>TorSt</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/Server.svg">
+    <link rel="shortcut icon" type="image/svg+xml" href="/assets/Server.svg">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 全站设计系统（必须先于下方内联样式加载） -->
+    <link href="/assets/css/theme.css" rel="stylesheet">
+    <script src="/assets/js/accent.js"></script>
+    <style>
+        /* index 特有：整页不滚动，内容在 .file-area 内滚动 */
+        html, body { overflow: hidden; }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--gutter);
+        }
+
+        .sidebar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;          /* 推到侧栏底部 */
+            padding-top: 12px;
+            border-top: 1px solid var(--divider);
+        }
+
+        /* 登出：低权重、中性色，悬停才转红，避免与主操作抢注意力 */
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            height: 38px;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            transition: background var(--dur-base) ease, color var(--dur-base) ease,
+                        border-color var(--dur-base) ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger-soft);
+            border-color: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .logout-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* index 特有：移动端布局切换（video/document 结构不同） */
+        @media (max-width: 767px) {
+            .mobile-header { display: flex; }
+            .mobile-filter-row { display: flex; }
+            .mobile-file-area {
+                display: block;
+                flex: 1;
+                overflow-y: auto;
+                min-height: 0;
+            }
+            .file-row { padding: 8px 10px; }
+            .file-icon { width: 32px; height: 32px; }
+            .file-name { font-size: 13px; }
+            .file-meta { font-size: 10px; }
+            .mobile-filter-row .filter-chip { padding: 6px 10px; font-size: 11px; }
+            .mobile-filter-row .filter-chip i { font-size: 10px; }
+            /* 移动端禁用文本选择 & 系统长按菜单，长按只触发自定义多选 */
+            .file-name, .file-meta, .path-bar, .filter-chip {
+                user-select: none;
+                -webkit-user-select: none;
+                -webkit-touch-callout: none;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .main-wrapper-mobile { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景图层：图片由服务端落地到 /assets/bg/，避免跨域取色问题 -->
+    <div id="bgLayer" aria-hidden="true"></div>
+
+    <!-- 桌面布局 -->
+    <div class="app-shell">
+        <div class="layout">
+            <!-- 左侧栏 20% -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="brand" id="theme-toggle" style="cursor: pointer;" aria-label="切换主题">
+                        <span class="brand-icon"><i class="fa fa-cloud"></i></span>
+                        <span>TorSt</span>
+                    </div>
+                </div>
+
+                <!-- CPU 卡片 -->
+                <div class="sys-card">
+                    <div class="sys-card-label">
+                        <span><i class="fa fa-microchip"></i>CPU</span>
+                        <span id="cpu-usage">0%</span>
+                    </div>
+                    <div class="sys-bar"><div class="sys-bar-fill" id="cpu-progress"></div></div>
+                </div>
+
+                <!-- 内存卡片 -->
+                <div class="sys-card">
+                    <div class="sys-card-label">
+                        <span><i class="fa fa-tachometer"></i>内存</span>
+                        <span id="mem-usage">0%</span>
+                    </div>
+                    <div class="sys-bar"><div class="sys-bar-fill" id="mem-progress"></div></div>
+                </div>
+
+                <!-- 关机 / 重启 -->
+                <div class="sys-actions">
+                    <button class="sys-btn shutdown" id="shutdown-btn"><i class="fa fa-power-off"></i>关机</button>
+                    <button class="sys-btn restart" id="restart-btn"><i class="fa fa-refresh"></i>重启</button>
+                </div>
+                <div class="sys-result" id="sys-result"></div>
+
+                <!-- 文件操作区（主要动作） -->
+                <div class="sidebar-actions">
+                    <button class="action-btn primary" id="create-folder-btn">
+                        <i class="fa fa-folder-open-o"></i>新建文件夹
+                    </button>
+                    <button class="action-btn secondary" id="upload-btn">
+                        <i class="fa fa-cloud-upload"></i>上传文件
+                    </button>
+                </div>
+
+                <!-- 底部区域：与文件操作分开，登出属于会话动作而非文件动作 -->
+                <div class="sidebar-footer">
+                    <button class="logout-btn" id="logout-btn" title="退出登录">
+                        <i class="fa fa-sign-out"></i><span>登出</span>
+                    </button>
+                </div>
+
+                <input type="file" id="file-upload" multiple>
+            </aside>
+
+            <!-- 右侧主区域 80% -->
+            <main class="main">
+                <!-- 顶部过滤行 -->
+                <div class="filter-row" id="filter-row">
+                    <button class="filter-chip active" data-filter="all"><i class="fa fa-th-large"></i>全部</button>
+                    <button class="filter-chip" data-filter="folder"><i class="fa fa-folder"></i>文件夹</button>
+                    <button class="filter-chip" data-filter="image"><i class="fa fa-file-image-o"></i>图片</button>
+                    <button class="filter-chip" data-filter="video"><i class="fa fa-file-video-o"></i>视频</button>
+                    <button class="filter-chip" data-filter="audio"><i class="fa fa-file-audio-o"></i>音频</button>
+                    <button class="filter-chip" data-filter="document"><i class="fa fa-file-text-o"></i>文档</button>
+                    <button class="filter-chip" data-filter="archive"><i class="fa fa-file-archive-o"></i>压缩</button>
+                </div>
+
+                <!-- 路径面包屑 -->
+                <div class="path-bar" id="path-bar"></div>
+
+                <!-- 文件列表 -->
+                <div class="file-area" id="file-area">
+                    <div id="empty-state" class="empty" style="display:none">
+                        <div class="empty-icon"><i class="fa fa-folder-open-o"></i></div>
+                        <div>暂无文件</div>
+                    </div>
+                </div>
+
+                <!-- 桌面选择工具栏 -->
+                <div class="selection-toolbar" id="selection-toolbar">
+                    <span class="count" id="selection-count">0</span>
+                    <button id="toolbar-rename" title="重命名" disabled><i class="fa fa-pencil"></i></button>
+                    <button id="toolbar-move" title="移动到当前目录" disabled><i class="fa fa-arrow-right"></i></button>
+                    <button id="toolbar-delete" class="danger" title="删除"><i class="fa fa-trash"></i></button>
+                    <button id="toolbar-cancel" title="取消"><i class="fa fa-times"></i></button>
+                </div>
+            </main>
+        </div>
+
+        <!-- 移动端布局 -->
+        <div class="main-wrapper-mobile">
+            <header class="mobile-header">
+                <div class="brand" id="mobile-theme-toggle" style="cursor: pointer;">
+                    <span class="brand-icon"><i class="fa fa-cloud"></i></span>
+                </div>
+                <button class="mobile-menu-btn" id="mobile-menu-btn"><i class="fa fa-bars"></i></button>
+            </header>
+
+            <div class="mobile-filter-row" id="mobile-filter-row">
+                <button class="filter-chip active" data-filter="all"><i class="fa fa-th-large"></i>全部</button>
+                <button class="filter-chip" data-filter="folder"><i class="fa fa-folder"></i>文件夹</button>
+                <button class="filter-chip" data-filter="image"><i class="fa fa-file-image-o"></i>图片</button>
+                <button class="filter-chip" data-filter="video"><i class="fa fa-file-video-o"></i>视频</button>
+                <button class="filter-chip" data-filter="audio"><i class="fa fa-file-audio-o"></i>音频</button>
+                <button class="filter-chip" data-filter="document"><i class="fa fa-file-text-o"></i>文档</button>
+                <button class="filter-chip" data-filter="archive"><i class="fa fa-file-archive-o"></i>压缩</button>
+            </div>
+
+            <div class="path-bar" id="path-bar"></div>
+
+            <div class="mobile-file-area" id="mobile-file-area">
+                <div id="mobile-empty-state" class="empty" style="display:none">
+                    <div class="empty-icon"><i class="fa fa-folder-open-o"></i></div>
+                    <div>暂无文件</div>
+                </div>
+            </div>
+
+            <!-- 移动端选择工具栏（底部） -->
+            <div class="mobile-selection-toolbar" id="mobile-selection-toolbar">
+                <span class="count" id="mobile-selection-count">0</span>
+                <div class="toolbar-actions">
+                    <button id="mobile-toolbar-rename" title="重命名" disabled><i class="fa fa-pencil"></i><span>重命名</span></button>
+                    <button id="mobile-toolbar-move" title="移动到当前目录" disabled><i class="fa fa-arrow-right"></i><span>移动</span></button>
+                    <button id="mobile-toolbar-delete" class="danger" title="删除"><i class="fa fa-trash"></i><span>删除</span></button>
+                    <button id="mobile-toolbar-cancel" title="取消"><i class="fa fa-times"></i><span>取消</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 移动端抽屉 -->
+    <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+    <aside class="mobile-drawer" id="mobile-drawer">
+        <div class="mobile-drawer-header">
+            <div class="brand">
+                <span class="brand-icon"><i class="fa fa-cloud"></i></span>
+                <span>TorSt</span>
+            </div>
+            <button class="mobile-drawer-close" id="mobile-drawer-close"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="mobile-drawer-content">
+            <div class="sys-card">
+                <div class="sys-card-label">
+                    <span><i class="fa fa-microchip"></i>CPU</span>
+                    <span id="m-cpu-usage">0%</span>
+                </div>
+                <div class="sys-bar"><div class="sys-bar-fill" id="m-cpu-progress"></div></div>
+            </div>
+
+            <div class="sys-card">
+                <div class="sys-card-label">
+                    <span><i class="fa fa-tachometer"></i>内存</span>
+                    <span id="m-mem-usage">0%</span>
+                </div>
+                <div class="sys-bar"><div class="sys-bar-fill" id="m-mem-progress"></div></div>
+            </div>
+
+            <div class="sys-actions">
+                <button class="sys-btn shutdown" id="m-shutdown-btn"><i class="fa fa-power-off"></i>关机</button>
+                <button class="sys-btn restart" id="m-restart-btn"><i class="fa fa-refresh"></i>重启</button>
+            </div>
+            <div class="sys-result" id="m-sys-result"></div>
+
+            <div class="sidebar-actions">
+                <button class="action-btn primary" id="m-create-folder-btn">
+                    <i class="fa fa-folder-open-o"></i>新建文件夹
+                </button>
+                <button class="action-btn secondary" id="m-upload-btn">
+                    <i class="fa fa-cloud-upload"></i>上传文件
+                </button>
+            </div>
+
+            <!-- 登出：与文件操作分开 -->
+            <div class="sidebar-footer">
+                <button class="logout-btn" id="m-logout-btn" title="退出登录">
+                    <i class="fa fa-sign-out"></i><span>登出</span>
+                </button>
+            </div>
+
+            <input type="file" id="m-file-upload" multiple>
+        </div>
+    </aside>
+
+    <!-- 模态：创建文件夹 -->
+    <div class="modal-backdrop" id="create-modal">
+        <div class="modal-card">
+            <h3 class="modal-title">新建文件夹</h3>
+            <p class="modal-message">输入文件夹名称</p>
+            <input class="modal-input" id="create-input" placeholder="文件夹名" autocomplete="off">
+            <div class="modal-actions">
+                <button class="modal-btn cancel" id="create-cancel">取消</button>
+                <button class="modal-btn primary" id="create-confirm">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态：重命名 -->
+    <div class="modal-backdrop" id="rename-modal">
+        <div class="modal-card">
+            <h3 class="modal-title">重命名</h3>
+            <p class="modal-message">输入新的名称</p>
+            <input class="modal-input" id="rename-input" placeholder="新名称" autocomplete="off">
+            <div class="modal-actions">
+                <button class="modal-btn cancel" id="rename-cancel">取消</button>
+                <button class="modal-btn primary" id="rename-confirm">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态：删除确认 -->
+    <div class="modal-backdrop" id="delete-modal">
+        <div class="modal-card">
+            <h3 class="modal-title">确认删除</h3>
+            <p class="modal-message" id="delete-message">将永久删除该项目，无法恢复。</p>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" id="delete-cancel">取消</button>
+                <button class="modal-btn danger" id="delete-confirm">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态：上传进度 -->
+    <div class="modal-backdrop" id="upload-modal">
+        <div class="modal-card">
+            <h3 class="modal-title">正在上传</h3>
+            <p class="modal-message" id="upload-filename">文件名</p>
+            <div class="upload-progress-wrap"><div class="upload-progress-fill" id="upload-progress"></div></div>
+            <div class="upload-info">
+                <span id="upload-percentage">0%</span>
+                <span id="upload-speed">0 KB/s</span>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" id="upload-cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态：登录 -->
+    <div class="modal-backdrop" id="login-modal">
+        <div class="modal-card" style="max-width: 400px;">
+            <h3 class="modal-title">登录</h3>
+            <p class="modal-message" id="login-message" style="display: none; color: var(--danger);"></p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <input class="modal-input" id="login-password" type="password" placeholder="管理员密码" autocomplete="current-password">
+                <div class="modal-actions" style="justify-content: flex-end;">
+                    <button class="modal-btn primary" id="login-confirm" style="width: 100%;">登录</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部弹起 Sheet（长按操作） -->
+    <div class="sheet-backdrop" id="sheet-backdrop"></div>
+    <div class="bottom-sheet" id="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <p class="sheet-title" id="sheet-title">操作</p>
+        <div class="sheet-item" id="sheet-rename"><i class="fa fa-pencil"></i>重命名</div>
+        <div class="sheet-item" id="sheet-download"><i class="fa fa-download"></i>下载</div>
+        <div class="sheet-item" id="sheet-move"><i class="fa fa-arrow-right"></i>移动</div>
+        <div class="sheet-item" id="sheet-delete"><i class="fa fa-trash"></i>删除</div>
+        <div class="sheet-cancel" id="sheet-cancel">取消</div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    (function(){
+        'use strict';
+
+        // ====== 背景图层 ======
+        // 图片由 server.js 在启动时抓取到 /assets/bg/（同源），
+        // 这样 canvas 才能读取像素做动态取色。
+        (function initBackground(){
+            const layer = document.getElementById('bgLayer');
+            if (!layer) return;
+
+            const url = '/assets/bg/index-bg.webp';
+            const probe = new Image();
+
+            probe.onload = function(){
+                layer.style.backgroundImage = 'url("' + url + '")';
+                document.body.classList.add('has-bg');
+                // 下一帧再加 is-ready，确保 opacity 过渡能触发
+                requestAnimationFrame(() => layer.classList.add('is-ready'));
+            };
+            probe.onerror = function(){
+                // 背景图不可用时保持纯色底，不影响功能
+                layer.style.display = 'none';
+            };
+            probe.src = url;
+        })();
+
+        // ====== 全局状态 ======
+        const state = {
+            currentPath: '',
+            selected: new Set(),
+            selectionMode: false,
+            uploadXHR: null,
+            uploadState: null,
+            renameTargetPath: null,
+            deleteTargetPaths: null,
+            longPressTimer: null,
+            longPressPath: null,
+            currentFilter: 'all',
+            isMobile: window.matchMedia('(max-width: 767px)').matches,
+            pressStart: null,
+            filesCache: []
+        };
+
+        // ====== 工具函数 ======
+        const $ = (id) => document.getElementById(id);
+        const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+
+        function normalizePath(p){
+            if(!p) return '';
+            return String(p).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').split('/').filter(Boolean).join('/');
+        }
+        function parentPath(p){
+            const n = normalizePath(p);
+            if(!n) return '';
+            const i = n.lastIndexOf('/');
+            return i > 0 ? n.substring(0, i) : '';
+        }
+        function formatSize(bytes){
+            if(bytes === 0 || bytes == null) return '0 B';
+            const k = 1024, sizes = ['B','KB','MB','GB','TB'];
+            const i = Math.floor(Math.log(bytes)/Math.log(k));
+            return parseFloat((bytes/Math.pow(k,i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        function formatDate(iso){
+            try {
+                const d = new Date(iso);
+                const now = new Date();
+                const sameDay = d.toDateString() === now.toDateString();
+                if(sameDay) return d.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+                const sameYear = d.getFullYear() === now.getFullYear();
+                return d.toLocaleDateString('zh-CN', sameYear ? {month:'2-digit', day:'2-digit'} : {year:'numeric', month:'2-digit', day:'2-digit'});
+            } catch { return ''; }
+        }
+        function getExt(name){
+            const i = (name || '').lastIndexOf('.');
+            return i >= 0 ? name.substring(i+1).toLowerCase() : '';
+        }
+        function fileCategory(file){
+            if(file.isDirectory) return 'folder';
+            const ext = getExt(file.name);
+            if(['jpg','jpeg','png','gif','bmp','webp','svg'].includes(ext)) return 'image';
+            if(['mp4','avi','mov','mkv','webm','flv','wmv','m4v'].includes(ext)) return 'video';
+            if(['mp3','wav','flac','aac','m4a','ogg','wma','opus'].includes(ext)) return 'audio';
+            if(['pdf','doc','docx','xls','xlsx','ppt','pptx','epub','txt','md','json','xml','html','css','js','py','java','cpp','c','h','sql','ts','csv','log'].includes(ext)) return 'document';
+            if(['zip','rar','7z','tar','gz','bz2','xz'].includes(ext)) return 'archive';
+            return 'other';
+        }
+        function escapeHtml(s){
+            return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+        }
+
+        // ====== 主题 ======
+        function applyTheme(theme){
+            if(theme === 'dark'){
+                document.documentElement.classList.add('theme-dark');
+            } else {
+                document.documentElement.classList.remove('theme-dark');
+            }
+        }
+        function initTheme(){
+            let saved = localStorage.getItem('theme');
+            if(!saved) saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            applyTheme(saved);
+        }
+        function toggleTheme(){
+            const isDark = document.documentElement.classList.contains('theme-dark');
+            const next = isDark ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        }
+
+        // ====== Toast ======
+        let toastTimer = null;
+        function toast(msg, type){
+            const el = $('toast');
+            el.textContent = msg;
+            el.className = 'toast ' + (type || '');
+            void el.offsetWidth;
+            el.classList.add('show');
+            if(toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        // ====== 模态控制 ======
+        function showModal(id){ $(id).classList.add('show'); }
+        function hideModal(id){ $(id).classList.remove('show'); }
+        function hideSheet(){
+            $('bottom-sheet').classList.remove('show');
+            $('sheet-backdrop').classList.remove('show');
+        }
+        function showSheet(title){
+            $('sheet-title').textContent = title || '操作';
+            $('bottom-sheet').classList.add('show');
+            $('sheet-backdrop').classList.add('show');
+        }
+
+        // ====== 系统状态 ======
+        async function loadSystemStatus(){
+            try {
+                const resp = await fetch('/api/status');
+                const data = await resp.json();
+                const cpu = data.cpu || 0;
+                const mem = data.memory || 0;
+                $('cpu-usage').textContent = cpu + '%';
+                $('cpu-progress').style.width = cpu + '%';
+                $('mem-usage').textContent = mem + '%';
+                $('mem-progress').style.width = mem + '%';
+                if($('m-cpu-usage')){
+                    $('m-cpu-usage').textContent = cpu + '%';
+                    $('m-cpu-progress').style.width = cpu + '%';
+                    $('m-mem-usage').textContent = mem + '%';
+                    $('m-mem-progress').style.width = mem + '%';
+                }
+            } catch(e) { /* ignore */ }
+        }
+        async function executeSystemCommand(cmd){
+            try {
+                const resp = await fetch('/api/' + cmd, {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({})
+                });
+                const data = await resp.json();
+                const r = $('sys-result');
+                const mr = $('m-sys-result');
+                if(data.success){
+                    r.textContent = data.message; r.className = 'sys-result show';
+                    mr.textContent = data.message; mr.className = 'sys-result show';
+                    toast(data.message, 'success');
+                    if(cmd === 'shutdown' || cmd === 'restart'){
+                        setTimeout(()=>{
+                            const txt = '系统正在' + (cmd==='shutdown'?'关机':'重启') + '…';
+                            r.textContent = txt;
+                            mr.textContent = txt;
+                        }, 2500);
+                    }
+                } else {
+                    r.textContent = data.message || '失败'; r.className = 'sys-result show error';
+                    mr.textContent = r.textContent; mr.className = 'sys-result show error';
+                    toast(data.message || '失败', 'error');
+                }
+                setTimeout(()=>{ r.classList.remove('show'); mr.classList.remove('show'); }, 5000);
+            } catch(e){
+                toast('执行失败: ' + e.message, 'error');
+            }
+        }
+
+        // ====== 认证 ======
+        function showLoginModal(){
+            const modal = $('login-modal');
+            const messageEl = $('login-message');
+            const passwordInput = $('login-password');
+            messageEl.style.display = 'none';
+            passwordInput.value = '';
+            modal.classList.add('show');
+            passwordInput.focus();
+        }
+
+        function hideLoginModal(){
+            $('login-modal').classList.remove('show');
+        }
+
+        function redirectAuth(){
+            showLoginModal();
+        }
+
+        async function handleLogin(){
+            const password = $('login-password').value;
+            const messageEl = $('login-message');
+            const btn = $('login-confirm');
+            
+            if(!password){
+                messageEl.textContent = '请输入密码';
+                messageEl.style.display = 'block';
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+            messageEl.style.display = 'none';
+            
+            try {
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ password })
+                });
+                const data = await resp.json();
+                if(data.success){
+                    hideLoginModal();
+                    // Reload the page to initialize authenticated state
+                    window.location.reload();
+                } else {
+                    messageEl.textContent = data.message || '密码错误';
+                    messageEl.style.display = 'block';
+                }
+            } catch(e){
+                console.error('Login failed:', e);
+                messageEl.textContent = '登录失败，请重试';
+                messageEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '登录';
+            }
+        }
+
+        async function ensureAuth(){
+            try {
+                const resp = await fetch('/api/auth/me', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                const data = await resp.json();
+                if(data.success){
+                    return true;
+                } else {
+                    redirectAuth();
+                    return false;
+                }
+            } catch(e){
+                console.warn('auth check failed', e);
+                redirectAuth();
+                return false;
+            }
+        }
+        
+        async function logout(){
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch(e) {
+                console.warn('logout failed', e);
+            }
+            redirectAuth();
+        }
+
+        // ====== 文件列表 ======
+        function getFileArea(){
+            return state.isMobile ? $('mobile-file-area') : $('file-area');
+        }
+        function getEmptyEl(){
+            return state.isMobile ? $('mobile-empty-state') : $('empty-state');
+        }
+
+        async function loadCloudFiles(){
+            if(!(await ensureAuth())) return;
+
+            const fileArea = getFileArea();
+            const emptyEl = getEmptyEl();
+            fileArea.innerHTML = '';
+            fileArea.appendChild(emptyEl);
+            emptyEl.style.display = 'flex';
+            emptyEl.querySelector('div:last-child').textContent = '加载中…';
+
+            try {
+                const resp = await fetch('/api/cloud/list', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({ path: state.currentPath })
+                });
+                const data = await resp.json();
+
+                if(!data.success){
+                    emptyEl.style.display = 'flex';
+                    emptyEl.querySelector('div:last-child').textContent = data.message || '加载失败';
+                    state.filesCache = [];
+                    return;
+                }
+
+                state.currentPath = normalizePath(data.currentPath || state.currentPath);
+                updatePathBar();
+
+                let files = data.files || [];
+                files.sort((a,b)=>{
+                    if(a.isDirectory && !b.isDirectory) return -1;
+                    if(!a.isDirectory && b.isDirectory) return 1;
+                    return a.name.localeCompare(b.name, 'zh-CN');
+                });
+                state.filesCache = files;
+
+                applyFilter();
+            } catch(e){
+                emptyEl.style.display = 'flex';
+                emptyEl.querySelector('div:last-child').textContent = '加载失败: ' + e.message;
+                state.filesCache = [];
+            }
+        }
+
+        function applyFilter(){
+            const fileArea = getFileArea();
+            const emptyEl = getEmptyEl();
+            fileArea.innerHTML = '';
+            fileArea.appendChild(emptyEl);
+
+            const list = state.filesCache.filter(f => {
+                if(state.currentFilter === 'all') return true;
+                if(state.currentFilter === 'folder') return f.isDirectory;
+                return fileCategory(f) === state.currentFilter;
+            });
+
+            if(list.length === 0){
+                emptyEl.style.display = 'flex';
+                emptyEl.querySelector('div:last-child').textContent =
+                    state.currentPath ? '该筛选下没有文件' : '暂无文件';
+                return;
+            }
+            emptyEl.style.display = 'none';
+
+            list.forEach(f => fileArea.appendChild(createFileRow(f)));
+            attachLongPress();
+        }
+
+        function createParentRow(){
+            const row = document.createElement('div');
+            row.className = 'file-row parent-row';
+            row.innerHTML =
+                '<div class="file-icon folder"><i class="fa fa-home"></i></div>' +
+                '<div class="file-info"><div class="file-name">首页</div></div>';
+            row.addEventListener('click', ()=> navigateTo(''));
+            return row;
+        }
+
+        function createFileRow(file){
+            const row = document.createElement('div');
+            row.className = 'file-row';
+            row.dataset.path = normalizePath(file.path);
+            row.dataset.isDirectory = file.isDirectory ? '1' : '0';
+            row.dataset.name = file.name;
+
+            const cat = fileCategory(file);
+            const isImage = cat === 'image';
+
+            const icon = document.createElement('div');
+            icon.className = 'file-icon ' + (cat === 'other' ? '' : cat);
+            if(isImage){
+                const img = document.createElement('img');
+                img.src = '/api/cloud/preview?path=' + encodeURIComponent(file.path);
+                img.alt = file.name;
+                img.loading = 'lazy';
+                img.onerror = () => {
+                    icon.classList.remove('image');
+                    icon.innerHTML = '<i class="fa fa-file-image-o"></i>';
+                };
+                icon.appendChild(img);
+            } else if(file.isDirectory){
+                icon.innerHTML = '<i class="fa fa-folder"></i>';
+            } else if(cat === 'video'){
+                icon.innerHTML = '<i class="fa fa-file-video-o"></i>';
+            } else if(cat === 'audio'){
+                icon.innerHTML = '<i class="fa fa-file-audio-o"></i>';
+            } else if(cat === 'document'){
+                icon.innerHTML = '<i class="fa fa-file-text-o"></i>';
+            } else if(cat === 'archive'){
+                icon.innerHTML = '<i class="fa fa-file-archive-o"></i>';
+            } else {
+                icon.innerHTML = '<i class="fa fa-file-o"></i>';
+            }
+
+            const info = document.createElement('div');
+            info.className = 'file-info';
+            const meta = file.isDirectory
+                ? '文件夹'
+                : (formatSize(file.size) + ' · ' + formatDate(file.modified));
+            info.innerHTML =
+                '<div class="file-name">' + escapeHtml(file.name) + '</div>' +
+                '<div class="file-meta">' + escapeHtml(meta) + '</div>';
+
+            const actions = document.createElement('div');
+            actions.className = 'file-actions';
+
+            if(!file.isDirectory){
+                const dlBtn = document.createElement('button');
+                dlBtn.className = 'icon-btn-sm';
+                dlBtn.title = '下载';
+                dlBtn.innerHTML = '<i class="fa fa-download"></i>';
+                dlBtn.addEventListener('click', e => { e.stopPropagation(); downloadFile(file.path, file.name); });
+                actions.appendChild(dlBtn);
+            }
+
+            const renBtn = document.createElement('button');
+            renBtn.className = 'icon-btn-sm';
+            renBtn.title = '重命名';
+            renBtn.innerHTML = '<i class="fa fa-pencil"></i>';
+            renBtn.addEventListener('click', e => { e.stopPropagation(); showRenameModal(file.path, file.name); });
+            actions.appendChild(renBtn);
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'icon-btn-sm delete';
+            delBtn.title = '删除';
+            delBtn.innerHTML = '<i class="fa fa-trash"></i>';
+            delBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                confirmDelete([file.path], [file.name]);
+            });
+            actions.appendChild(delBtn);
+
+            row.appendChild(icon);
+            row.appendChild(info);
+            row.appendChild(actions);
+
+            row.addEventListener('click', e => {
+                if(e.target.closest('.file-actions')) return;
+                if(state.selectionMode){
+                    e.preventDefault();
+                    // In selection mode, allow selecting files, and navigate into folders without exiting selection mode
+                    if(file.isDirectory){
+                        // Navigate to folder but keep selection mode active
+                        state.currentPath = normalizePath(file.path);
+                        loadCloudFiles();
+                    } else {
+                        toggleSelect(file.path, !state.selected.has(normalizePath(file.path)));
+                    }
+                    return;
+                }
+                if(file.isDirectory){
+                    navigateTo(normalizePath(file.path));
+                } else {
+                    previewFile(file);
+                }
+            });
+
+            attachRowLongPress(row);
+
+            return row;
+        }
+
+        function navigateTo(path, keepSelectionMode = false){
+            state.currentPath = normalizePath(path);
+            if(!keepSelectionMode) exitSelectionMode();
+            loadCloudFiles();
+        }
+
+        // ====== 路径面包屑（整条作为「返回上一目录」按钮，用于支持文件移动） ======
+        function updatePathBar(){
+            const bars = $$('.path-bar');
+            if(bars.length === 0) return;
+            bars.forEach(bar => bar.innerHTML = '');
+            const parts = state.currentPath.split('/').filter(Boolean);
+            const atRoot = parts.length === 0;
+
+            bars.forEach(bar => {
+                // 始终展示 "首页" 作为锚点
+                const root = document.createElement('span');
+                root.className = 'path-bar-item home';
+                root.textContent = '首页';
+                bar.appendChild(root);
+
+                parts.forEach((p, idx) => {
+                    const sep = document.createElement('span');
+                    sep.className = 'path-bar-sep';
+                    sep.textContent = ' › ';
+                    bar.appendChild(sep);
+                    const item = document.createElement('span');
+                    item.className = 'path-bar-item' + (idx === parts.length - 1 ? ' current' : '');
+                    item.textContent = p;
+                    bar.appendChild(item);
+                });
+
+                // 右侧提示文字
+                const hint = document.createElement('span');
+                hint.className = 'path-bar-up-hint';
+                hint.innerHTML = atRoot
+                    ? '<i class="fa fa-arrow-up"></i>已是根目录'
+                    : '<i class="fa fa-arrow-up"></i>点击返回上一目录';
+                bar.appendChild(hint);
+
+                // 整条统一点击：跳到上一目录（用于支持文件移动时选择目标位置）
+                bar.onclick = () => {
+                    if(atRoot) return;
+                    // 多选状态下保留选择，以便随后点"移动"把文件移到父目录
+                    navigateTo(parentPath(state.currentPath), state.selectionMode);
+                };
+            });
+        }
+
+        // ====== 预览 ======
+        async function previewFile(file){
+            if(!(await ensureAuth())) return;
+            const ext = getExt(file.name);
+            const filePath = normalizePath(file.path);
+            const params = 'path=' + encodeURIComponent(filePath) + '&name=' + encodeURIComponent(file.name);
+            if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)){
+                window.open('/picture.html?' + params, '_blank');
+            } else if(['mp4','avi','mov','mkv','webm','flv','wmv','m4v'].includes(ext)){
+                window.open('/video.html?' + params, '_blank');
+            } else if(['mp3','wav','flac','aac','m4a','ogg','wma','opus'].includes(ext)){
+                window.open('/music.html?' + params, '_blank');
+            } else if(['epub','pdf','doc','docx','xls','xlsx','ppt','pptx','txt','md'].includes(ext)){
+                window.open('/document.html?' + params, '_blank');
+            } else {
+                downloadFile(filePath, file.name);
+            }
+        }
+
+        // ====== 下载 ======
+        async function downloadFile(filePath, fileName){
+            if(!(await ensureAuth())) return;
+            const url = '/api/cloud/download?path=' + encodeURIComponent(filePath);
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            if(fileName) a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            toast('开始下载: ' + fileName, 'success');
+        }
+
+        // ====== 创建文件夹 ======
+        function showCreateModal(){
+            $('create-input').value = '';
+            showModal('create-modal');
+            setTimeout(()=> $('create-input').focus(), 100);
+        }
+        async function createFolder(){
+            const name = $('create-input').value.trim();
+            if(!name){ toast('请输入文件夹名', 'error'); return; }
+            try {
+                const resp = await fetch('/api/cloud/mkdir', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({ path: state.currentPath, name })
+                });
+                const data = await resp.json();
+                if(data.success){
+                    hideModal('create-modal');
+                    toast('文件夹已创建', 'success');
+                    loadCloudFiles();
+                } else {
+                    toast(data.message || '创建失败', 'error');
+                }
+            } catch(e){ toast('创建失败: ' + e.message, 'error'); }
+        }
+
+        // ====== 重命名 ======
+        function showRenameModal(path, currentName){
+            state.renameTargetPath = path;
+            $('rename-input').value = currentName || '';
+            showModal('rename-modal');
+            setTimeout(()=>{ $('rename-input').focus(); $('rename-input').select(); }, 100);
+        }
+        async function renameItem(){
+            const newName = $('rename-input').value.trim();
+            if(!newName){ toast('请输入新名称', 'error'); return; }
+            if(newName.includes('/') || newName.includes('\\')){ toast('名称不能包含路径分隔符', 'error'); return; }
+            if(!state.renameTargetPath) return;
+            try {
+                const resp = await fetch('/api/cloud/rename', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({ path: state.renameTargetPath, newName })
+                });
+                const data = await resp.json();
+                if(data.success){
+                    hideModal('rename-modal');
+                    toast('重命名成功', 'success');
+                    if(state.renameTargetPath === state.currentPath){
+                        navigateTo(parentPath(state.currentPath));
+                    } else {
+                        loadCloudFiles();
+                    }
+                } else {
+                    toast(data.message || '重命名失败', 'error');
+                }
+            } catch(e){ toast('重命名失败: ' + e.message, 'error'); }
+        }
+
+        // ====== 删除 ======
+        function confirmDelete(paths){
+            state.deleteTargetPaths = paths.slice();
+            const msg = paths.length > 1
+                ? `将永久删除 ${paths.length} 个项目，无法恢复。`
+                : '将永久删除该项目，无法恢复。';
+            $('delete-message').textContent = msg;
+            showModal('delete-modal');
+        }
+        async function performDelete(){
+            const paths = state.deleteTargetPaths || [];
+            if(paths.length === 0) return;
+            hideModal('delete-modal');
+            let okCount = 0, failCount = 0;
+            for(const p of paths){
+                try {
+                    const resp = await fetch('/api/cloud/delete', {
+                        method:'POST',
+                        headers:{'Content-Type':'application/json'},
+                        credentials: 'include',
+                        body: JSON.stringify({ path: p })
+                    });
+                    const data = await resp.json();
+                    if(data.success) okCount++; else failCount++;
+                } catch(e){ failCount++; }
+            }
+            if(failCount === 0) toast('已删除 ' + okCount + ' 项', 'success');
+            else toast('删除完成: ' + okCount + ' 成功, ' + failCount + ' 失败', 'error');
+            exitSelectionMode();
+            if(paths.includes(state.currentPath)){
+                navigateTo(parentPath(state.currentPath));
+            } else {
+                loadCloudFiles();
+            }
+        }
+
+        // ====== 上传 ======
+        function clearUploadInputs(){
+            const a = $('file-upload'); const b = $('m-file-upload');
+            if(a) a.value = '';
+            if(b) b.value = '';
+        }
+        async function handleUpload(e){
+            if(!(await ensureAuth())) return;
+            const files = e.target.files;
+            if(!files || files.length === 0) return;
+            uploadFiles(files, 0, 0);
+        }
+        function uploadFiles(files, index, okCount){
+            if(index >= files.length){
+                hideModal('upload-modal');
+                clearUploadInputs();
+                toast('已上传 ' + okCount + ' 个文件', 'success');
+                state.uploadXHR = null;
+                state.uploadState = null;
+                loadCloudFiles();
+                return;
+            }
+            const file = files[index];
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('path', state.currentPath);
+
+            $('upload-filename').textContent = file.name;
+            $('upload-progress').style.width = '0%';
+            $('upload-percentage').textContent = '0%';
+            $('upload-speed').textContent = '0 KB/s';
+            showModal('upload-modal');
+            state.uploadState = { startTime: Date.now(), lastLoaded: 0, lastTime: Date.now() };
+
+            const xhr = new XMLHttpRequest();
+            state.uploadXHR = xhr;
+            xhr.withCredentials = true;
+            const url = '/api/cloud/upload?path=' + encodeURIComponent(state.currentPath || '');
+            xhr.open('POST', url, true);
+
+            xhr.upload.addEventListener('progress', e => {
+                if(!e.lengthComputable) return;
+                const pct = Math.round(e.loaded / e.total * 100);
+                $('upload-progress').style.width = pct + '%';
+                $('upload-percentage').textContent = pct + '%';
+                const now = Date.now();
+                const s = state.uploadState;
+                const dt = (now - s.lastTime) / 1000;
+                if(dt > 0){
+                    const db = e.loaded - s.lastLoaded;
+                    const bps = db / dt;
+                    $('upload-speed').textContent = formatBps(bps);
+                }
+                s.lastLoaded = e.loaded;
+                s.lastTime = now;
+            });
+            xhr.addEventListener('load', () => {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if(data.success){
+                        uploadFiles(files, index + 1, okCount + 1);
+                    } else {
+                        hideModal('upload-modal');
+                        clearUploadInputs();
+                        toast('上传失败: ' + (data.message || '未知错误'), 'error');
+                    }
+                } catch(err){
+                    hideModal('upload-modal');
+                    clearUploadInputs();
+                    toast('上传失败: ' + err.message, 'error');
+                }
+            });
+            xhr.addEventListener('error', () => {
+                hideModal('upload-modal');
+                clearUploadInputs();
+                toast('上传失败: 网络错误', 'error');
+            });
+            xhr.send(fd);
+        }
+        function cancelUpload(){
+            if(state.uploadXHR){
+                state.uploadXHR.abort();
+                state.uploadXHR = null;
+            }
+            hideModal('upload-modal');
+            clearUploadInputs();
+            toast('上传已取消', 'error');
+        }
+        function formatBps(bps){
+            if(!bps || bps <= 0) return '0 KB/s';
+            const u = ['B/s','KB/s','MB/s','GB/s']; let i = 0; let v = bps;
+            while(v >= 1024 && i < u.length-1){ v/=1024; i++; }
+            return v.toFixed(2) + ' ' + u[i];
+        }
+
+        // ====== 选择模式 ======
+        function enterSelectionMode(){
+            state.selectionMode = true;
+            state.selected.clear();
+            if(!state.isMobile){
+                $('selection-toolbar').classList.add('show');
+            } else {
+                $('mobile-selection-toolbar').classList.add('show');
+            }
+        }
+        function exitSelectionMode(){
+            state.selectionMode = false;
+            state.selected.clear();
+            $('selection-toolbar').classList.remove('show');
+            $('mobile-selection-toolbar').classList.remove('show');
+            $$('.file-row.selected').forEach(r => r.classList.remove('selected'));
+            updateSelectionCount();
+        }
+        function toggleSelect(path, checked){
+            const n = normalizePath(path);
+            if(checked) state.selected.add(n);
+            else state.selected.delete(n);
+
+            $$('.file-row').forEach(r => {
+                if(normalizePath(r.dataset.path || '') === n){
+                    r.classList.toggle('selected', checked);
+                }
+            });
+
+            if(state.selected.size === 0 && state.selectionMode){
+                exitSelectionMode();
+                return;
+            }
+            updateSelectionCount();
+        }
+        function updateSelectionCount(){
+            const c = state.selected.size;
+            $('selection-count').textContent = '已选 ' + c;
+            $('mobile-selection-count').textContent = '已选 ' + c;
+            $('toolbar-rename').disabled = c !== 1;
+            $('toolbar-move').disabled = c === 0;
+            $('mobile-toolbar-rename').disabled = c !== 1;
+            $('mobile-toolbar-move').disabled = c === 0;
+        }
+        function batchRename(){
+            if(state.selected.size !== 1){ toast('请只选择 1 个项目', 'error'); return; }
+            const p = Array.from(state.selected)[0];
+            const row = $$('.file-row').find(r => normalizePath(r.dataset.path) === p);
+            const name = row ? (row.dataset.name || '') : '';
+            showRenameModal(p, name);
+        }
+        function batchDelete(){
+            if(state.selected.size === 0) return;
+            const paths = Array.from(state.selected);
+            confirmDelete(paths);
+        }
+        async function batchMoveToCurrentFolder(){
+            if(state.selected.size === 0){ toast('请先选择文件', 'error'); return; }
+            const items = Array.from(state.selected);
+            try {
+                const resp = await fetch('/api/cloud/move', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({ items, targetPath: state.currentPath })
+                });
+                const data = await resp.json();
+                if(data.success){
+                    toast('移动完成: ' + data.moved + '/' + items.length, 'success');
+                    exitSelectionMode();
+                    loadCloudFiles();
+                } else {
+                    toast(data.message || '移动失败', 'error');
+                }
+            } catch(e){ toast('移动失败: ' + e.message, 'error'); }
+        }
+
+        // ====== 长按 ======
+        function attachLongPress(){
+            $$('.file-row:not(.parent-row)').forEach(r => attachRowLongPress(r));
+        }
+        function attachRowLongPress(row){
+            const path = row.dataset.path;
+
+            const start = (e) => {
+                if(e.target.closest('.file-actions')) return;
+                state.pressStart = {
+                    x: e.touches ? e.touches[0].clientX : e.clientX,
+                    y: e.touches ? e.touches[0].clientY : e.clientY,
+                    t: Date.now()
+                };
+                if(state.longPressTimer) clearTimeout(state.longPressTimer);
+                state.longPressPath = path;
+                state.longPressTimer = setTimeout(()=>{
+                    triggerLongPress(row);
+                }, 500);
+            };
+            const move = (e) => {
+                if(!state.pressStart) return;
+                const x = e.touches ? e.touches[0].clientX : e.clientX;
+                const y = e.touches ? e.touches[0].clientY : e.clientY;
+                if(Math.abs(x - state.pressStart.x) > 10 || Math.abs(y - state.pressStart.y) > 10){
+                    if(state.longPressTimer){ clearTimeout(state.longPressTimer); state.longPressTimer = null; }
+                }
+            };
+            const end = (e) => {
+                if(state.longPressTimer){ clearTimeout(state.longPressTimer); state.longPressTimer = null; }
+                if(state.longPressPath === path && state.pressStart && Date.now() - state.pressStart.t >= 480){
+                    if(e && e.preventDefault) e.preventDefault();
+                    if(e && e.stopPropagation) e.stopPropagation();
+                }
+                state.pressStart = null;
+            };
+
+            row.addEventListener('mousedown', start);
+            row.addEventListener('mousemove', move);
+            row.addEventListener('mouseup', end);
+            row.addEventListener('mouseleave', end);
+            row.addEventListener('touchstart', start, { passive: true });
+            row.addEventListener('touchmove', move, { passive: true });
+            row.addEventListener('touchend', end);
+            row.addEventListener('touchcancel', end);
+        }
+        function triggerLongPress(row){
+            const path = row.dataset.path;
+            const name = row.dataset.name;
+            const isDirectory = row.dataset.isDirectory === '1';
+            if(state.isMobile){
+                showSheet(name);
+                $('sheet-rename').onclick = () => { hideSheet(); showRenameModal(path, name); };
+                if(!isDirectory){
+                    $('sheet-download').style.display = 'flex';
+                    $('sheet-download').onclick = () => { hideSheet(); downloadFile(path, name); };
+                } else {
+                    $('sheet-download').style.display = 'none';
+                }
+                $('sheet-move').onclick = () => { hideSheet(); enterSelectionMode(); toggleSelect(path, true); };
+                $('sheet-delete').onclick = () => { hideSheet(); confirmDelete([path]); };
+                if(navigator.vibrate) navigator.vibrate(40);
+            } else {
+                if(!state.selectionMode) enterSelectionMode();
+                // In desktop, long press on folder should navigate, not select
+                if(isDirectory){
+                    navigateTo(normalizePath(path));
+                } else {
+                    toggleSelect(path, true);
+                }
+                if(navigator.vibrate) navigator.vibrate(40);
+            }
+        }
+
+        // ====== 过滤器 ======
+        function bindFilterChips(){
+            const bind = (row) => {
+                if(!row) return;
+                row.addEventListener('click', e => {
+                    const chip = e.target.closest('.filter-chip');
+                    if(!chip) return;
+                    $$('.filter-chip', row).forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    state.currentFilter = chip.dataset.filter;
+                    applyFilter();
+                });
+            };
+            bind($('filter-row'));
+            bind($('mobile-filter-row'));
+        }
+
+        // ====== 移动端抽屉 ======
+        function toggleDrawer(open){
+            const d = $('mobile-drawer');
+            const b = $('mobile-drawer-backdrop');
+            if(open){
+                d.classList.add('show');
+                b.classList.add('show');
+            } else {
+                d.classList.remove('show');
+                b.classList.remove('show');
+            }
+        }
+
+        // ====== 事件绑定 ======
+        function bindEvents(){
+            // Theme toggle via cloud icon click
+            $('theme-toggle').addEventListener('click', toggleTheme);
+            $('mobile-theme-toggle').addEventListener('click', toggleTheme);
+
+            $('shutdown-btn').addEventListener('click', ()=> executeSystemCommand('shutdown'));
+            $('restart-btn').addEventListener('click', ()=> executeSystemCommand('restart'));
+            $('m-shutdown-btn').addEventListener('click', ()=> executeSystemCommand('shutdown'));
+            $('m-restart-btn').addEventListener('click', ()=> executeSystemCommand('restart'));
+
+            $('create-folder-btn').addEventListener('click', showCreateModal);
+            $('m-create-folder-btn').addEventListener('click', ()=>{ toggleDrawer(false); showCreateModal(); });
+            $('create-confirm').addEventListener('click', createFolder);
+            $('create-cancel').addEventListener('click', ()=> hideModal('create-modal'));
+            $('create-input').addEventListener('keydown', e => { if(e.key === 'Enter') createFolder(); });
+
+            $('rename-confirm').addEventListener('click', renameItem);
+            $('rename-cancel').addEventListener('click', ()=> hideModal('rename-modal'));
+            $('rename-input').addEventListener('keydown', e => { if(e.key === 'Enter') renameItem(); });
+
+            $('delete-confirm').addEventListener('click', performDelete);
+            $('delete-cancel').addEventListener('click', ()=> hideModal('delete-modal'));
+
+            $('upload-btn').addEventListener('click', ()=> $('file-upload').click());
+            $('m-upload-btn').addEventListener('click', ()=>{ toggleDrawer(false); $('m-file-upload').click(); });
+            $('file-upload').addEventListener('change', handleUpload);
+            $('m-file-upload').addEventListener('change', handleUpload);
+            $('upload-cancel').addEventListener('click', cancelUpload);
+
+            $('logout-btn').addEventListener('click', logout);
+            $('m-logout-btn').addEventListener('click', logout);
+
+            $('toolbar-rename').addEventListener('click', batchRename);
+            $('toolbar-delete').addEventListener('click', batchDelete);
+            $('toolbar-move').addEventListener('click', batchMoveToCurrentFolder);
+            $('toolbar-cancel').addEventListener('click', exitSelectionMode);
+
+            // Mobile selection toolbar
+            $('mobile-toolbar-rename').addEventListener('click', batchRename);
+            $('mobile-toolbar-delete').addEventListener('click', batchDelete);
+            $('mobile-toolbar-move').addEventListener('click', batchMoveToCurrentFolder);
+            $('mobile-toolbar-cancel').addEventListener('click', exitSelectionMode);
+
+            $('mobile-menu-btn').addEventListener('click', ()=> toggleDrawer(true));
+            $('mobile-drawer-close').addEventListener('click', ()=> toggleDrawer(false));
+            $('mobile-drawer-backdrop').addEventListener('click', ()=> toggleDrawer(false));
+
+            $('sheet-cancel').addEventListener('click', hideSheet);
+            $('sheet-backdrop').addEventListener('click', hideSheet);
+
+            bindFilterChips();
+
+            ['create-modal','rename-modal','delete-modal'].forEach(id => {
+                $(id).addEventListener('click', e => {
+                    if(e.target.id === id) hideModal(id);
+                });
+            });
+            $('upload-modal').addEventListener('click', e => {
+                if(e.target.id === 'upload-modal') cancelUpload();
+            });
+            $('login-modal').addEventListener('click', e => {
+                if(e.target.id === 'login-modal') hideLoginModal();
+            });
+            $('login-confirm').addEventListener('click', handleLogin);
+            $('login-password').addEventListener('keydown', e => {
+                if(e.key === 'Enter') handleLogin();
+            });
+
+            document.addEventListener('keydown', e => {
+                if(e.key === 'Escape'){
+                    hideSheet();
+                    toggleDrawer(false);
+                    ['create-modal','rename-modal','delete-modal','upload-modal','login-modal'].forEach(id => hideModal(id));
+                }
+            });
+
+            window.matchMedia('(max-width: 767px)').addEventListener('change', e => {
+                state.isMobile = e.matches;
+                applyFilter();
+            });
+        }
+
+        // ====== 初始化 ======
+        async function init(){
+            initTheme();
+            bindEvents();
+
+            const ok = await ensureAuth();
+            if(!ok) return;
+
+            loadSystemStatus();
+            setInterval(loadSystemStatus, 5000);
+            loadCloudFiles();
+        }
+
+        if(document.readyState === 'loading'){
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+    </script>
+</body>
+</html>

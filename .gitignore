@@ -1,0 +1,7 @@
+desktop.ini
+.env
+node_modules/
+package-lock.json
+run.bat
+public/assets/bg/index-bg.webp
+logs/

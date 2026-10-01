@@ -1,0 +1,1793 @@
+/* ==========================================================================
+   TorSt 设计系统 (Design System)
+   --------------------------------------------------------------------------
+   全站共用的设计令牌 (design tokens) 与组件样式。
+   5 个页面 (index / video / document / music / picture) 共用本文件，
+   以消除 index ↔ music 之间的主色跳变。
+
+   加载顺序要求：本文件必须在各页面内联 <style> 之前引入，
+   以便页面级样式可以按需覆盖。
+
+   主题切换：<html class="theme-dark"> 或 <html class="theme-light">
+   ========================================================================== */
+
+/* ==========================================================================
+   1. 设计令牌 — 亮色（默认）
+   ========================================================================== */
+:root {
+    /* ---- 品牌色 ----
+       若 accent.js 已从背景图提取主色，则优先采用 --primary-light*；
+       否则回退到下面的默认值，保证未取色/取色失败时依然可用。 */
+    --primary: var(--primary-light, #165DFF);
+    --primary-hover: var(--primary-light-hover, #0E4BD6);
+    --primary-active: var(--primary-light-active, #0A3AA8);
+    --primary-soft: var(--primary-light-soft, rgba(22, 93, 255, 0.10));
+    --primary-soft-strong: var(--primary-light-soft-strong, rgba(22, 93, 255, 0.18));
+
+    /* ---- 次级色（同色系，替代原 #707da6 灰紫） ---- */
+    --secondary: #4E7BF0;
+    --secondary-hover: #3D68DC;
+    --secondary-soft: rgba(78, 123, 240, 0.10);
+
+    /* ---- 语义色 ---- */
+    --success: #34C759;
+    --success-soft: rgba(52, 199, 89, 0.10);
+    --danger: #FF3B30;
+    --danger-hover: #E0342A;
+    --danger-soft: rgba(255, 59, 48, 0.10);
+    --warning: #FF9F0A;
+    --warning-soft: rgba(255, 159, 10, 0.10);
+
+    /* ---- 背景层级 ---- */
+    --bg-app: #F5F5F7;
+    --bg-card: #FFFFFF;
+    --bg-card-translucent: rgba(255, 255, 255, 0.72);
+    --bg-elevated: rgba(255, 255, 255, 0.85);
+    --bg-sunken: #EFEFF2;
+
+    /* ---- 文字层级 ---- */
+    --text: #1D1D1F;
+    --text-secondary: #6E6E73;
+    --text-tertiary: #98989D;
+    --text-on-primary: var(--text-on-primary-light, #FFFFFF);
+
+    /* ---- 描边与分割 ---- */
+    --divider: rgba(0, 0, 0, 0.08);
+    --border: rgba(0, 0, 0, 0.06);
+
+    /* ---- 滚动条 ---- */
+    --scrollbar-thumb: rgba(0, 0, 0, 0.18);
+    --scrollbar-thumb-hover: rgba(0, 0, 0, 0.32);
+    --scrollbar-thumb-active: rgba(0, 0, 0, 0.45);
+
+    /* ---- 阴影（3 档令牌） ---- */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
+
+    /* ---- 圆角（3 档令牌） ---- */
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --radius-pill: 999px;
+
+    /* ---- 尺寸令牌（比例修正的核心） ---- */
+    --sidebar-w: 260px;                 /* 固定宽度，替代脆弱的 20% */
+    --sidebar-w-compact: 76px;          /* 窄窗口收为图标栏 */
+    --shell-max: 1400px;
+    --gutter: 16px;
+
+    /* ---- 文件类型图标的淡染色（亮色：浅底 + 彩字） ----
+       主色系由 accent.js 注入的 --primary-rgb 派生，未取色时回退到默认蓝。
+       底色透明度取 0.14：过低（0.10）时几乎看不出类型色，
+       在浅色界面上会显得"没上色"，偏高则回到廉价色块。 */
+    --primary-rgb: 22, 93, 255;
+    --tint-primary-bg: rgba(var(--primary-rgb), 0.14);
+    --tint-primary-fg: var(--primary);
+    --tint-folder-bg: rgba(255, 159, 10, 0.18);
+    --tint-folder-fg: #A96200;
+    --tint-neutral-bg: rgba(0, 0, 0, 0.06);
+    --tint-neutral-fg: #6E6E73;
+
+    /* ---- 字体 ---- */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text",
+                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI",
+                 "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                 "Liberation Mono", monospace;
+
+    /* ---- 玻璃拟态 ---- */
+    --blur: saturate(180%) blur(20px);
+
+    /* ---- 动效 ---- */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 0.15s;
+    --dur-base: 0.2s;
+    --dur-slow: 0.3s;
+}
+
+/* ==========================================================================
+   2. 设计令牌 — 暗色
+   --------------------------------------------------------------------------
+   同时接受 .theme-dark（index/video/document）与 .dark（music/picture 的
+   Tailwind 约定）两种类名，确保同一个 localStorage.theme 在 5 个页面间
+   表现一致，跨页跳转不会丢失深色状态。
+   ========================================================================== */
+.theme-dark,
+.dark {
+    /* 动态取色：若 accent.js 已从背景图提取深色主色，则优先采用；
+       否则回退到下面硬编码的默认值，保证未取色时依然可用。 */
+    --primary: var(--primary-dark, #5A9EFF);
+    --primary-hover: var(--primary-dark-hover, #79B0FF);
+    --primary-active: var(--primary-dark-active, #4A8AE8);
+    --primary-soft: var(--primary-dark-soft, rgba(90, 158, 255, 0.15));
+    --primary-soft-strong: var(--primary-dark-soft-strong, rgba(90, 158, 255, 0.24));
+
+    --secondary: #7B9BF5;
+    --secondary-hover: #8FAAF8;
+    --secondary-soft: rgba(123, 155, 245, 0.15);
+
+    --success: #30D158;
+    --success-soft: rgba(48, 209, 88, 0.15);
+    --danger: #FF453A;
+    --danger-hover: #FF6259;
+    --danger-soft: rgba(255, 69, 58, 0.15);
+    --warning: #FFD60A;
+    --warning-soft: rgba(255, 214, 10, 0.15);
+
+    /* 底色不用纯黑：纯黑下主色与分割线对比过强、观感发"糊"，
+       且 OLED 上大面积纯黑与内容区边界生硬。
+       改为略带蓝调的近黑，配合层级：
+         sunken(最暗) < app(页底) < card(卡片) < elevated(浮层) */
+    --bg-app: #0F0F11;
+    --bg-card: #1C1C1E;
+    --bg-card-translucent: rgba(28, 28, 30, 0.72);
+    --bg-elevated: rgba(28, 28, 30, 0.85);
+    --bg-sunken: #0A0A0C;
+
+    --text: #F5F5F7;
+    --text-secondary: #98989D;
+    --text-tertiary: #6E6E73;
+    --text-on-primary: var(--text-on-primary-dark, #FFFFFF);
+
+    --divider: rgba(255, 255, 255, 0.10);
+    --border: rgba(255, 255, 255, 0.08);
+
+    /* ---- 滚动条（深色下提高亮度以保证可见性） ---- */
+    --scrollbar-thumb: rgba(255, 255, 255, 0.20);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.34);
+    --scrollbar-thumb-active: rgba(255, 255, 255, 0.48);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.40);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.50);
+
+    /* ---- 文件类型图标的淡染色（暗色：深底 + 提亮字） ---- */
+    --tint-primary-bg: rgba(var(--primary-rgb), 0.18);
+    --tint-primary-fg: var(--primary);
+    --tint-folder-bg: rgba(255, 179, 64, 0.16);
+    --tint-folder-fg: #FFC178;
+    --tint-neutral-bg: rgba(255, 255, 255, 0.08);
+    --tint-neutral-fg: #98989D;
+}
+
+/* ==========================================================================
+   3. 基础重置
+   ========================================================================== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg-app);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background var(--dur-slow) ease, color var(--dur-slow) ease;
+}
+
+button {
+    font-family: inherit;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: inherit;
+    padding: 0;
+}
+
+input,
+textarea,
+select {
+    font-family: inherit;
+}
+
+/* 键盘可达性：统一焦点环（不影响鼠标操作） */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* ==========================================================================
+   4. 主容器与布局（比例修正）
+   ========================================================================== */
+
+/* ---- 背景图层（index 专用） ------------------------------------------
+   独立于 body 的固定层，便于做缩放/淡入，且不触发重排。
+   由页面决定是否插入该元素；未插入时纯色底照常工作。
+   ---------------------------------------------------------------------- */
+#bgLayer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* 轻微放大，避免底图边缘出现生硬的直线 */
+    transform: scale(1.04);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    will-change: opacity;
+}
+
+#bgLayer.is-ready {
+    opacity: 1;
+}
+
+/* 底图之上、内容之下的统一遮罩：
+   - 亮色：白色蒙版压低对比，保证前景文字可读（毛玻璃的基础）
+   - 暗色：黑色蒙版，避免图片过亮破坏深色氛围 */
+#bgLayer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* 蒙版不宜过重：过白会让底图完全失去存在感（等于没加背景）。
+       目标是"看得见图、读得清字"，靠各层材质分别控制可读性。 */
+    background: rgba(248, 249, 251, 0.34);
+    transition: background var(--dur-slow) ease;
+}
+
+.theme-dark #bgLayer::after,
+.dark #bgLayer::after {
+    background: rgba(0, 0, 0, 0.48);
+}
+
+/* 有背景图时，body 不再需要纯色底（避免边缘露出白边） */
+body.has-bg {
+    background: var(--bg-app);
+}
+
+/* 内容需要浮在背景层之上 */
+body.has-bg .app-shell {
+    position: relative;
+    z-index: 1;
+}
+
+/* ---- 材质系统 --------------------------------------------------------
+   亮色：毛玻璃 (frosted glass) —— 高透明度 + 大模糊 + 细白描边
+   暗色：亚克力 (acrylic)      —— 更高不透明度 + 噪点 + 内发光描边
+   两者视觉差异明确：毛玻璃偏"通透"，亚克力偏"磨砂板材"。
+   ---------------------------------------------------------------------- */
+
+/* 毛玻璃（亮色默认） */
+.glass {
+    background: rgba(255, 255, 255, 0.68);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* 亚克力（暗色）：噪点用内联 SVG 生成，无需额外图片资源 */
+.theme-dark .glass,
+.dark .glass {
+    background: rgba(28, 28, 30, 0.72);
+    backdrop-filter: blur(40px) saturate(140%);
+    -webkit-backdrop-filter: blur(40px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+    background-blend-mode: overlay;
+}
+
+/* 不支持 backdrop-filter 时退回不透明背景，保证可读性 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass {
+        background: var(--bg-card);
+    }
+}
+
+/* 无背景图内容器的默认底色（未启用材质时保持原样） */
+.app-shell {
+    width: 100%;
+    height: 100%;
+    max-width: var(--shell-max);
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    position: relative;
+}
+
+/* 启用背景图后，外壳本身透明，让材质层显形 */
+body.has-bg .app-shell {
+    background: transparent;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.14);
+}
+
+body.has-bg .sidebar,
+body.has-bg .main {
+    background: transparent;
+}
+
+/* 侧栏与主区各自铺一层自己的材质底，避免直接透出底图的暗部。
+   仅靠卡片自身的半透明会在图像暗区变脏灰。 */
+body.has-bg .sidebar {
+    background: rgba(252, 252, 253, 0.76);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+}
+
+.theme-dark body.has-bg .sidebar,
+.dark body.has-bg .sidebar {
+    background: rgba(22, 22, 24, 0.74);
+    backdrop-filter: blur(40px) saturate(140%);
+    -webkit-backdrop-filter: blur(40px) saturate(140%);
+}
+
+body.has-bg .main {
+    background: rgba(252, 252, 253, 0.62);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+}
+
+.theme-dark body.has-bg .main,
+.dark body.has-bg .main {
+    background: rgba(18, 18, 20, 0.62);
+    backdrop-filter: blur(40px) saturate(140%);
+    -webkit-backdrop-filter: blur(40px) saturate(140%);
+}
+
+/* 工具栏 / 路径栏在材质底之上，用更轻的底色即可 */
+body.has-bg .filter-row,
+body.has-bg .path-bar,
+body.has-bg .player-toolbar,
+body.has-bg .reader-toolbar {
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.theme-dark body.has-bg .filter-row,
+.dark body.has-bg .filter-row,
+.theme-dark body.has-bg .path-bar,
+.dark body.has-bg .path-bar,
+.theme-dark body.has-bg .player-toolbar,
+.dark body.has-bg .player-toolbar,
+.theme-dark body.has-bg .reader-toolbar,
+.dark body.has-bg .reader-toolbar {
+    background: rgba(28, 28, 30, 0.55);
+}
+
+body.has-bg .file-area,
+body.has-bg .reader-content,
+body.has-bg .player-area {
+    background: transparent;
+}
+
+/* ---- 移动端材质层 ----------------------------------------------------
+   移动端结构是 .main-wrapper-mobile，不含 .sidebar/.main，
+   因此上面的规则完全不生效，会导致背景图直接透出来（整屏透明）。
+
+   注意不要在两层上用高不透明度：
+   wrapper 与内部区域的 alpha 是**叠加**的，
+   例如 0.90 + 0.80 实际接近 0.98，背景会被完全盖住，
+   毛玻璃效果随之消失（这正是之前的错误）。
+
+   正确做法：外层几乎全透，材质交给各功能层，
+   每层都带 backdrop-filter 才能真正"磨砂"。 */
+body.has-bg .main-wrapper-mobile {
+    /* 外层不铺底，让背景图能透到内层被模糊 */
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* 顶部栏与筛选行：中等透明度 + 模糊，玻璃感最明显 */
+body.has-bg .mobile-header,
+body.has-bg .mobile-filter-row {
+    background: rgba(252, 252, 253, 0.62);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+.theme-dark body.has-bg .mobile-header,
+.dark body.has-bg .mobile-header,
+.theme-dark body.has-bg .mobile-filter-row,
+.dark body.has-bg .mobile-filter-row {
+    background: rgba(24, 24, 26, 0.60);
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+}
+
+/* 文件列表区：比顶栏略实以保证文件名可读，但仍保留可见的通透感 */
+body.has-bg .mobile-file-area {
+    background: rgba(252, 252, 253, 0.56);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+.theme-dark body.has-bg .mobile-file-area,
+.dark body.has-bg .mobile-file-area {
+    background: rgba(20, 20, 22, 0.54);
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+}
+
+/* 路径栏：与顶栏同一层级 */
+body.has-bg .mobile-file-area + .path-bar,
+body.has-bg .main-wrapper-mobile .path-bar {
+    background: rgba(252, 252, 253, 0.60);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+.theme-dark body.has-bg .main-wrapper-mobile .path-bar,
+.dark body.has-bg .main-wrapper-mobile .path-bar {
+    background: rgba(24, 24, 26, 0.58);
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+}
+
+/* 移动端抽屉是浮层，需要更实以免透出下层内容 */
+body.has-bg .mobile-drawer {
+    background: rgba(252, 252, 253, 0.88);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+}
+
+.theme-dark body.has-bg .mobile-drawer,
+.dark body.has-bg .mobile-drawer {
+    background: rgba(20, 20, 22, 0.88);
+    backdrop-filter: blur(40px) saturate(140%);
+    -webkit-backdrop-filter: blur(40px) saturate(140%);
+}
+
+/* 移动端卡片：文件行在移动端是整宽列表，用轻微的实底提升可读性 */
+body.has-bg .mobile-file-area .file-row:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.theme-dark body.has-bg .mobile-file-area .file-row:hover,
+.dark body.has-bg .mobile-file-area .file-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* 卡片 / 浮层自动套用材质（仅在有背景图时，避免无图场景发灰）
+   不透明度取值偏高：背景图色彩浓重，透明度太低会让卡片发脏、
+   并导致文字对比度不足。毛玻璃观感靠 blur + 描边体现，而非降低不透明度。 */
+body.has-bg .sys-card,
+body.has-bg .playlist-card,
+body.has-bg .toc-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border-color: rgba(255, 255, 255, 0.75);
+}
+
+.theme-dark body.has-bg .sys-card,
+.dark body.has-bg .sys-card,
+.theme-dark body.has-bg .playlist-card,
+.dark body.has-bg .playlist-card,
+.theme-dark body.has-bg .toc-card,
+.dark body.has-bg .toc-card {
+    background: rgba(38, 38, 42, 0.72);
+    backdrop-filter: blur(36px) saturate(140%);
+    -webkit-backdrop-filter: blur(36px) saturate(140%);
+    border-color: rgba(255, 255, 255, 0.10);
+}
+
+/* 模态框：浮在遮罩之上，需要更实的底以保证文字清晰 */
+body.has-bg .modal-card {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.theme-dark body.has-bg .modal-card,
+.dark body.has-bg .modal-card {
+    background: rgba(28, 28, 30, 0.94);
+    backdrop-filter: blur(44px) saturate(140%);
+    -webkit-backdrop-filter: blur(44px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E");
+    background-blend-mode: overlay;
+}
+
+/* 底部 Sheet / Toast 同理 */
+body.has-bg .bottom-sheet,
+body.has-bg .toast {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+}
+
+.theme-dark body.has-bg .bottom-sheet,
+.dark body.has-bg .bottom-sheet,
+.theme-dark body.has-bg .toast,
+.dark body.has-bg .toast {
+    background: rgba(28, 28, 30, 0.92);
+    backdrop-filter: blur(40px) saturate(140%);
+    -webkit-backdrop-filter: blur(40px) saturate(140%);
+}
+
+/* 固定宽度侧栏 + 弹性主区，替代 20% / 80% */
+.layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+/* 窄窗口：侧栏收为图标栏，主区获得更多空间 */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .layout {
+        grid-template-columns: var(--sidebar-w-compact) minmax(0, 1fr);
+    }
+    .sidebar .brand span:last-child,
+    .sidebar .action-btn span,
+    .sidebar .sys-card,
+    .sidebar .sys-result {
+        display: none;
+    }
+    .sidebar {
+        align-items: center;
+        padding: 14px 8px;
+    }
+    .sidebar-header {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    .sidebar .action-btn {
+        width: 44px;
+        padding: 0;
+    }
+    /* 图标栏模式下登出按钮同样收为纯图标 */
+    .sidebar .logout-btn {
+        width: 44px;
+        padding: 0;
+    }
+    .sidebar .logout-btn span {
+        display: none;
+    }
+    .sidebar .sidebar-footer {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .sidebar .sys-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    .sidebar .sys-btn span {
+        display: none;
+    }
+}
+
+@media (max-width: 767px) {
+    body {
+        padding: 8px;
+    }
+    .app-shell {
+        border-radius: var(--radius-md);
+    }
+    .layout {
+        display: none;
+    }
+}
+
+/* ==========================================================================
+   5. 侧栏
+   ========================================================================== */
+.sidebar {
+    background: var(--bg-elevated);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border-right: 1px solid var(--divider);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 12px;
+    gap: 14px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px 12px;
+    border-bottom: 1px solid var(--divider);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+}
+
+.brand-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-on-primary);
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px var(--primary-soft-strong);
+}
+
+/* ---- 系统监控卡片 ---- */
+.sys-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.sys-card-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.sys-card-label i {
+    margin-right: 6px;
+    color: var(--primary);
+    font-size: 14px;
+}
+
+.sys-bar {
+    height: 8px;
+    border-radius: var(--radius-pill);
+    background: var(--divider);
+    overflow: hidden;
+}
+
+.sys-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+/* 负载偏高时预警配色 */
+.sys-bar-fill.warn {
+    background: linear-gradient(90deg, var(--warning), var(--danger));
+}
+
+/* ---- 关机 / 重启 ---- */
+.sys-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.sys-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background var(--dur-base) ease, border-color var(--dur-base) ease,
+                transform var(--dur-fast) ease;
+}
+
+.sys-btn:hover {
+    background: var(--divider);
+}
+
+.sys-btn:active {
+    transform: scale(0.96);
+}
+
+.sys-btn.shutdown {
+    color: var(--danger);
+    border-color: var(--danger-soft);
+}
+
+.sys-btn.shutdown:hover {
+    background: var(--danger-soft);
+}
+
+.sys-btn.restart {
+    color: var(--primary);
+    border-color: var(--primary-soft);
+}
+
+.sys-btn.restart:hover {
+    background: var(--primary-soft);
+}
+
+.sys-result {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-app);
+    min-height: 24px;
+    transition: opacity var(--dur-base) ease;
+    opacity: 0;
+}
+
+.sys-result.show {
+    opacity: 1;
+}
+
+.sys-result.error {
+    color: var(--danger);
+}
+
+/* ---- 主要操作按钮 ---- */
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-on-primary);
+    transition: background var(--dur-base) ease, box-shadow var(--dur-base) ease,
+                transform var(--dur-fast) ease;
+    flex-shrink: 0;
+}
+
+.action-btn.primary {
+    background: var(--primary);
+    box-shadow: 0 2px 8px var(--primary-soft-strong);
+}
+
+.action-btn.primary:hover {
+    background: var(--primary-hover);
+    box-shadow: 0 4px 12px var(--primary-soft-strong);
+}
+
+.action-btn.secondary {
+    background: var(--secondary);
+    box-shadow: 0 2px 8px var(--secondary-soft);
+}
+
+.action-btn.secondary:hover {
+    background: var(--secondary-hover);
+}
+
+.action-btn:active {
+    transform: scale(0.97);
+}
+
+/* 侧栏内按钮统一下间距（修正原先只有登出有 margin-top 的节奏不一致） */
+.sidebar .action-btn + .action-btn,
+.mobile-drawer-content .action-btn + .action-btn {
+    margin-top: 0;
+}
+
+/* 图标按钮 */
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    background: transparent;
+    transition: background var(--dur-base) ease, color var(--dur-base) ease,
+                transform var(--dur-fast) ease;
+}
+
+.icon-btn:hover {
+    background: var(--divider);
+    color: var(--text);
+}
+
+.icon-btn:active {
+    transform: scale(0.92);
+}
+
+/* ==========================================================================
+   6. 主区域
+   ========================================================================== */
+.main {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    min-width: 0;
+    min-height: 0;
+    background: var(--bg-card);
+    position: relative;
+}
+
+/* ---- 过滤行 ---- */
+.filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--divider);
+    background: var(--bg-card-translucent);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.filter-row::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-app);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    transition: background var(--dur-base) ease, color var(--dur-base) ease,
+                border-color var(--dur-base) ease;
+    white-space: nowrap;
+}
+
+.filter-chip:hover {
+    color: var(--text);
+    background: var(--divider);
+}
+
+.filter-chip.active {
+    background: var(--primary);
+    color: var(--text-on-primary);
+    border-color: var(--primary);
+}
+
+.filter-chip i {
+    font-size: 11px;
+}
+
+/* ---- 路径面包屑 ---- */
+.path-bar {
+    display: flex;
+    align-items: center;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--divider);
+    font-size: 12px;
+    color: var(--text-secondary);
+    gap: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: var(--bg-card-translucent);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--dur-fast) ease;
+}
+
+.path-bar:hover {
+    background: var(--divider);
+}
+
+.path-bar:active {
+    background: var(--primary-soft);
+}
+
+.path-bar-item {
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.path-bar-item.current {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.path-bar-item.home {
+    color: var(--text-secondary);
+}
+
+.path-bar-sep {
+    color: var(--text-tertiary);
+}
+
+.path-bar-up-hint {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+}
+
+/* ---- 文件列表 ---- */
+.file-area {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px 4px 16px;
+    background: var(--bg-card);
+}
+
+.file-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--dur-fast) ease;
+    margin: 2px 8px;
+    position: relative;
+}
+
+.file-row:hover {
+    background: var(--bg-app);
+}
+
+.file-row.selected {
+    background: var(--primary-soft);
+}
+
+.file-row.parent-row {
+    color: var(--text-secondary);
+}
+
+/* ---- 文件图标 ----------------------------------------------------------
+   设计原则（修正早期"白图标+高饱和渐变底"的错误做法）：
+   - 亮色模式：浅色**淡染**底 + **彩色**图标。大面积高饱和色块在浅色
+     界面里非常廉价，且白字在亮底上对比度极低、显得脏。
+   - 暗色模式：深色淡染底 + 提亮图标，保持统一的克制观感。
+   颜色倾向按文件类型区分，但饱和度都很低，只做"温和的类型提示"。
+   ---------------------------------------------------------------------- */
+.file-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    font-size: 17px;
+    /* 默认（其它类型）：中性淡染 */
+    background: var(--tint-neutral-bg);
+    color: var(--tint-neutral-fg);
+}
+
+/* 文件夹：暖琥珀色提示，是全站唯一"暖"的类型色，用于视觉锚点 */
+.file-icon.folder {
+    background: var(--tint-folder-bg);
+    color: var(--tint-folder-fg);
+}
+
+/* 媒体/文档/压缩：统一在品牌色系内做淡染，靠图标形状区分类型 */
+.file-icon.image,
+.file-icon.video,
+.file-icon.audio,
+.file-icon.document,
+.file-icon.archive {
+    background: var(--tint-primary-bg);
+    color: var(--tint-primary-fg);
+}
+
+.file-icon.text,
+.file-icon.other {
+    background: var(--tint-neutral-bg);
+    color: var(--tint-neutral-fg);
+}
+
+.file-icon.image {
+    padding: 0;
+}
+
+.file-icon.image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.file-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity var(--dur-fast) ease;
+}
+
+.file-row:hover .file-actions,
+.file-row.selected .file-actions {
+    opacity: 1;
+}
+
+/* 触屏设备无 hover，始终显示操作按钮 */
+@media (hover: none) {
+    .file-actions {
+        opacity: 1;
+    }
+}
+
+.file-actions .icon-btn-sm {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    background: transparent;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.file-actions .icon-btn-sm:hover {
+    background: var(--divider);
+    color: var(--primary);
+}
+
+.file-actions .icon-btn-sm.delete:hover {
+    color: var(--danger);
+    background: var(--danger-soft);
+}
+
+/* ---- 空状态 ---- */
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-app);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 12px;
+    color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   7. 模态框
+   ========================================================================== */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-backdrop.show {
+    display: flex;
+    animation: ts-fade-in var(--dur-base) ease;
+}
+
+.modal-card {
+    width: 90%;
+    max-width: 380px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 22px 22px 18px;
+    box-shadow: var(--shadow-lg);
+    animation: ts-slide-up 0.25s var(--ease-out);
+}
+
+.modal-title {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    text-align: center;
+    color: var(--text);
+}
+
+.modal-message {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin: 0 0 16px;
+}
+
+.modal-input {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-app);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color var(--dur-base) ease, box-shadow var(--dur-base) ease;
+}
+
+.modal-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.modal-btn {
+    flex: 1;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--dur-base) ease, opacity var(--dur-base) ease;
+}
+
+.modal-btn:active {
+    opacity: 0.8;
+}
+
+.modal-btn.cancel {
+    background: var(--bg-app);
+    color: var(--text);
+}
+
+.modal-btn.cancel:hover {
+    background: var(--divider);
+}
+
+.modal-btn.primary {
+    background: var(--primary);
+    color: var(--text-on-primary);
+}
+
+.modal-btn.primary:hover {
+    background: var(--primary-hover);
+}
+
+.modal-btn.danger {
+    background: var(--danger);
+    color: #FFFFFF;
+}
+
+.modal-btn.danger:hover {
+    background: var(--danger-hover);
+}
+
+.modal-btn.secondary {
+    background: var(--secondary);
+    color: var(--text-on-primary);
+}
+
+.modal-btn.secondary:hover {
+    background: var(--secondary-hover);
+}
+
+/* ---- 上传进度 ---- */
+.upload-progress-wrap {
+    width: 100%;
+    height: 6px;
+    background: var(--divider);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.upload-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    width: 0%;
+    transition: width var(--dur-slow) ease;
+}
+
+.upload-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+/* ==========================================================================
+   8. 移动端底部 Sheet
+   ========================================================================== */
+.sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    z-index: 90;
+}
+
+.sheet-backdrop.show {
+    display: block;
+    animation: ts-fade-in var(--dur-base) ease;
+}
+
+.bottom-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-card);
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    padding: 8px 8px calc(env(safe-area-inset-bottom, 16px) + 8px);
+    transform: translateY(100%);
+    transition: transform var(--dur-slow) var(--ease-out);
+    z-index: 95;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.bottom-sheet.show {
+    transform: translateY(0);
+}
+
+.sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--divider);
+    margin: 8px auto 14px;
+}
+
+.sheet-title {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 8px;
+    padding: 0 12px;
+}
+
+.sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    font-size: 16px;
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    transition: background var(--dur-fast) ease;
+    cursor: pointer;
+}
+
+.sheet-item:active {
+    background: var(--divider);
+}
+
+.sheet-item.danger {
+    color: var(--danger);
+}
+
+.sheet-item i {
+    width: 22px;
+    text-align: center;
+    color: var(--primary);
+}
+
+.sheet-item.danger i {
+    color: var(--danger);
+}
+
+.sheet-cancel {
+    margin-top: 8px;
+    background: var(--bg-app);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   9. 选择工具栏
+   ========================================================================== */
+.selection-toolbar {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: var(--bg-elevated);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    display: none;
+    gap: 4px;
+    z-index: 50;
+    box-shadow: var(--shadow-md);
+}
+
+.selection-toolbar.show {
+    display: flex;
+}
+
+.selection-toolbar .count {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.selection-toolbar button {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    background: transparent;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.selection-toolbar button:hover {
+    background: var(--divider);
+}
+
+.selection-toolbar button.danger:hover {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.selection-toolbar button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.mobile-selection-toolbar {
+    display: none;
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--bg-elevated);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--divider);
+    border-radius: var(--radius-md);
+    z-index: 50;
+    box-shadow: var(--shadow-md);
+    min-height: 44px;
+    margin: 0;
+}
+
+.mobile-selection-toolbar.show {
+    display: flex;
+}
+
+.mobile-selection-toolbar .count {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.mobile-selection-toolbar .toolbar-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.mobile-selection-toolbar button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 10px;
+    min-height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-app);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.mobile-selection-toolbar button span {
+    line-height: 1;
+}
+
+.mobile-selection-toolbar button:hover,
+.mobile-selection-toolbar button:active {
+    background: var(--divider);
+}
+
+.mobile-selection-toolbar button.danger:hover,
+.mobile-selection-toolbar button.danger:active {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.mobile-selection-toolbar button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.mobile-selection-toolbar button i {
+    font-size: 12px;
+}
+
+/* ==========================================================================
+   10. Toast
+   ========================================================================== */
+.toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--bg-elevated);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    font-size: 13px;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity var(--dur-slow) var(--ease-out),
+                transform var(--dur-slow) var(--ease-out);
+    border: 1px solid var(--border);
+    max-width: 90%;
+    pointer-events: none;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast.success {
+    border-left: 3px solid var(--success);
+}
+
+.toast.error {
+    border-left: 3px solid var(--danger);
+}
+
+/* ==========================================================================
+   11. 移动端布局
+   ========================================================================== */
+.mobile-header {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--bg-elevated);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border-bottom: 1px solid var(--divider);
+    position: relative;
+    z-index: 30;
+}
+
+.mobile-header .brand {
+    font-size: 14px;
+}
+
+.mobile-menu-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    background: transparent;
+    transition: background var(--dur-fast) ease;
+}
+
+.mobile-menu-btn:hover,
+.mobile-menu-btn:active {
+    background: var(--divider);
+}
+
+.mobile-filter-row {
+    display: none;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--divider);
+    gap: 6px;
+    overflow-x: auto;
+    background: var(--bg-card);
+    align-items: center;
+    scrollbar-width: none;
+}
+
+.mobile-filter-row::-webkit-scrollbar {
+    display: none;
+}
+
+.mobile-filter-row .filter-chip {
+    padding: 6px 10px;
+    font-size: 11px;
+}
+
+.mobile-filter-row .filter-chip i {
+    font-size: 10px;
+}
+
+.mobile-file-area {
+    display: none;
+}
+
+.main-wrapper-mobile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.main-wrapper-mobile > .mobile-file-area {
+    flex: 1;
+    min-height: 0;
+}
+
+/* ---- 移动端抽屉 ---- */
+.mobile-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    z-index: 200;
+}
+
+.mobile-drawer-backdrop.show {
+    display: block;
+    animation: ts-fade-in var(--dur-base) ease;
+}
+
+.mobile-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 80%;
+    max-width: 340px;
+    background: var(--bg-card);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform var(--dur-slow) var(--ease-out);
+    display: flex;
+    flex-direction: column;
+    padding: calc(env(safe-area-inset-top, 16px) + 8px) 14px
+             calc(env(safe-area-inset-bottom, 16px) + 8px);
+    overflow-y: auto;
+}
+
+.mobile-drawer.show {
+    transform: translateX(0);
+}
+
+.mobile-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0 16px;
+    border-bottom: 1px solid var(--divider);
+    margin-bottom: 14px;
+}
+
+.mobile-drawer-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-app);
+}
+
+.mobile-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.theme-row-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--bg-app);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    justify-content: flex-start;
+    height: auto;
+}
+
+.theme-row-btn:active {
+    opacity: 0.7;
+}
+
+/* ==========================================================================
+   12. 滚动条（全站统一）
+   --------------------------------------------------------------------------
+   设计目标：
+   - 与色板联动：滑块用中性分隔色，悬停加深，自动适配深浅主题
+   - 细、圆、无箭头，滑动时出现、静止时淡出（仅 Firefox 支持自动隐藏，
+     WebKit 用透明轨道 + 悬停显色的方式弱化存在感）
+   - 同时覆盖 Firefox (scrollbar-*) 与 Chromium/Safari (::-webkit-scrollbar)
+   ========================================================================== */
+
+/* ---- 全局默认：所有可滚动区域 ---- */
+* {
+    scrollbar-width: thin;                                  /* Firefox */
+    scrollbar-color: var(--scrollbar-thumb) transparent;    /* Firefox: 滑块 / 轨道 */
+}
+
+/* WebKit / Blink */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;   /* 轨道透明，减少视觉噪音 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--radius-pill);
+    /* 用透明边框营造"内缩"效果，避免滑块贴边显得笨重 */
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: var(--scrollbar-thumb-active);
+    background-clip: content-box;
+}
+
+/* 滚动条两端的箭头按钮：新版 Chromium 已不再渲染，这里显式关闭以兼容旧版 */
+::-webkit-scrollbar-button {
+    display: none;
+    height: 0;
+    width: 0;
+}
+
+/* 横竖滚动条交汇处的方块 */
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* ---- 滚动容器：留出滚动条空间，避免内容被遮 ---- */
+.sidebar {
+    scrollbar-gutter: stable;
+}
+
+/* ---- 隐藏式滚动条：用于横向 chip 条等不需要可见滑块的场景 ---- */
+.scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+/* ==========================================================================
+   13. 工具类与动画
+   ========================================================================== */
+@keyframes ts-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes ts-slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* 尊重"减少动态效果"系统偏好 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* 隐藏 native file input */
+#file-upload,
+#m-file-upload {
+    display: none;
+}

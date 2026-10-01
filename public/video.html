@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="web-app-capable" content="yes">
+    <meta name="web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#165DFF">
+    <title>视频播放</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/Server.svg">
+    <link rel="shortcut icon" type="image/svg+xml" href="/assets/Server.svg">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/assets/css/DPlayer.min.css" rel="stylesheet">
+    <!-- 全站设计系统（必须先于下方内联样式加载） -->
+    <link href="/assets/css/theme.css" rel="stylesheet">
+    <script src="/assets/js/accent.js"></script>
+    <script src="/assets/js/DPlayer.min.js"></script>
+    <style>
+        /* ============================================================
+           本页专属样式。
+           通用设计令牌与组件样式已抽至 /assets/css/theme.css。
+           ============================================================ */
+
+        /* video 特有：整页不滚动，播放器区自适应 */
+        html, body { overflow: hidden; }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--gutter);
+        }
+
+        /* video 特有：移动端切换（含播放器工具栏） */
+        @media (max-width: 767px) {
+            .mobile-header { display: flex; }
+            .mobile-player-toolbar { display: flex; }
+            .mobile-player-content {
+                display: block;
+                flex: 1;
+                min-height: 0;
+                overflow: hidden;
+            }
+            .sidebar { display: none; }
+        }
+
+        @media (min-width: 768px) {
+            .mobile-header { display: none; }
+            .mobile-player-toolbar { display: none; }
+            .mobile-player-content { display: none; }
+        }
+
+        /* ============================================================
+           video 专有组件
+           ============================================================ */
+
+        /* main 在本页只需「工具栏 / 路径栏 / 播放器」三行 */
+        .main {
+            grid-template-rows: auto auto 1fr;
+        }
+
+        /* ---- 顶部工具栏 ---- */
+        .player-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--divider);
+            background: var(--bg-card-translucent);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+        }
+
+        .player-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .toolbar-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 32px;
+            min-width: 32px;
+            padding: 0 10px;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            transition: background var(--dur-fast) ease, color var(--dur-fast) ease,
+                        transform var(--dur-fast) ease;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--divider);
+            color: var(--text);
+        }
+
+        .toolbar-btn:active {
+            transform: scale(0.94);
+        }
+
+        .toolbar-btn.primary {
+            background: var(--primary);
+            color: var(--text-on-primary);
+        }
+
+        .toolbar-btn.primary:hover {
+            background: var(--primary-hover);
+            color: var(--text-on-primary);
+        }
+
+        /* ---- 播放器区域（关键：必须撑满剩余空间，否则 DPlayer 会塌陷） ---- */
+        .player-area {
+            position: relative;
+            min-height: 0;
+            min-width: 0;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* DPlayer 需要显式尺寸容器；同时保证纵横比正确、不变形 */
+        .player-area > div,
+        .player-area .dplayer {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .player-area video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;   /* 保持比例，不拉伸 */
+            background: #000;
+        }
+
+        /* ---- 播放列表卡片 ---- */
+        .playlist-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            flex: 1;               /* 占满侧栏剩余高度 */
+            overflow: hidden;
+        }
+
+        .playlist-card-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--divider);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+
+        .playlist-card-title i {
+            margin-right: 6px;
+            color: var(--primary);
+        }
+
+        .playlist-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: var(--radius-pill);
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .playlist-list {
+            list-style: none;
+            margin: 0;
+            padding: 6px;
+            overflow-y: auto;
+            min-height: 0;
+            flex: 1;
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--dur-fast) ease;
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .playlist-item:hover {
+            background: var(--bg-app);
+        }
+
+        .playlist-item.active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .playlist-item-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            background: var(--tint-primary-bg);
+            color: var(--tint-primary-fg);
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .playlist-item.active .playlist-item-icon {
+            background: var(--primary);
+            color: var(--text-on-primary);
+        }
+
+        .playlist-item-name {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-empty {
+            list-style: none;
+            padding: 24px 12px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        /* ---- 移动端播放器 ---- */
+        .mobile-player-toolbar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--divider);
+            background: var(--bg-elevated);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            flex-shrink: 0;
+        }
+
+        .mobile-player-content {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .mobile-player-content .player-area {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* DPlayer 样式覆盖 - 适配深色模式 */
+        .theme-dark .dplayer-controller-mask {
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+        .theme-dark .dplayer-controller {
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+        .theme-dark .dplayer-bar-preview {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+        }
+        .theme-dark .dplayer-bar-preview-progress {
+            background: var(--primary);
+        }
+        .theme-dark .dplayer-menu-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+        }
+        .theme-dark .dplayer-menu-item {
+            color: var(--text);
+        }
+        .theme-dark .dplayer-menu-item:hover {
+            background: var(--divider);
+        }
+        .theme-dark .dplayer-setting-item {
+            color: var(--text);
+        }
+        .theme-dark .dplayer-setting-item:hover {
+            background: var(--divider);
+        }
+        .theme-dark .dplayer-icon {
+            color: var(--text);
+        }
+        .theme-dark .dplayer-loading {
+            border-top-color: var(--primary);
+        }
+        .theme-dark .dplayer-notice {
+            background: var(--bg-elevated);
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <!-- 桌面布局 -->
+    <div class="app-shell">
+        <div class="layout">
+            <!-- 左侧栏 20% - 播放列表 -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="brand" id="theme-toggle" aria-label="切换主题">
+                        <span class="brand-icon"><i class="fa fa-film"></i></span>
+                        <span>视频播放</span>
+                    </div>
+                </div>
+
+                <!-- 播放列表卡片 -->
+                <div class="playlist-card">
+                    <div class="playlist-card-title">
+                        <span><i class="fa fa-list"></i>播放列表</span>
+                        <span class="playlist-count" id="playlist-count">0</span>
+                    </div>
+                    <ul class="playlist-list" id="playlist-list">
+                        <li class="playlist-empty" id="playlist-empty">暂无视频</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- 右侧主区域 80% - 播放器 -->
+            <main class="main">
+                <!-- 顶部工具栏 -->
+                <div class="player-toolbar">
+                    <div class="player-title" id="player-title">视频播放器</div>
+                    <div class="toolbar-actions">
+                        <button class="toolbar-btn primary" id="close-btn" title="关闭" aria-label="关闭"><i class="fa fa-times"></i></button>
+                    </div>
+                </div>
+
+                <!-- 路径面包屑 -->
+                <div class="path-bar" id="path-bar"></div>
+
+                <!-- 播放器区域 -->
+                <div class="player-area" id="player-area">
+                    <div id="dplayer"></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 移动端布局 -->
+        <div class="mobile-header">
+            <div class="brand" id="mobile-theme-toggle" aria-label="切换主题">
+                <span class="brand-icon"><i class="fa fa-film"></i></span>
+            </div>
+            <button class="mobile-menu-btn" id="mobile-menu-btn"><i class="fa fa-list"></i></button>
+        </div>
+
+        <div class="mobile-player-toolbar">
+            <div class="player-title" id="mobile-player-title">视频播放器</div>
+            <div class="toolbar-actions">
+                <button class="toolbar-btn primary" id="mobile-close-btn" title="关闭" aria-label="关闭"><i class="fa fa-times"></i></button>
+            </div>
+        </div>
+
+        <div class="mobile-player-content" id="mobile-player-content">
+            <div class="player-area" id="mobile-player-area">
+                <div id="mobile-dplayer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 移动端抽屉 - 播放列表 -->
+    <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+    <aside class="mobile-drawer" id="mobile-drawer">
+        <div class="mobile-drawer-header">
+            <div class="brand">
+                <span class="brand-icon"><i class="fa fa-film"></i></span>
+                <span>视频播放</span>
+            </div>
+            <button class="mobile-drawer-close" id="mobile-drawer-close"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="mobile-drawer-content">
+            <div class="playlist-card">
+                <div class="playlist-card-title">
+                    <span><i class="fa fa-list"></i>播放列表</span>
+                    <span class="playlist-count" id="mobile-playlist-count">0</span>
+                </div>
+                <ul class="playlist-list" id="mobile-playlist-list">
+                    <li class="playlist-empty" id="mobile-playlist-empty">暂无视频</li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    (function(){
+        'use strict';
+        console.log('Video.html script started');
+
+        // ====== 全局状态 ======
+        const state = {
+            player: null,
+            mobilePlayer: null,
+            currentPath: '',
+            currentName: '',
+            playlist: [],
+            currentIndex: -1,
+            isMobile: window.matchMedia('(max-width: 767px)').matches,
+            isFullscreen: false
+        };
+
+        // ====== 工具函数 ======
+        const $ = (id) => document.getElementById(id);
+        const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+
+        function showToast(message, type = 'info') {
+            const toast = $('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ====== 主题 ======
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('theme-dark');
+            } else {
+                document.documentElement.classList.remove('theme-dark');
+            }
+        }
+        function initTheme() {
+            let saved = localStorage.getItem('theme');
+            if (!saved) saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            applyTheme(saved);
+        }
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('theme-dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+            // 触发自定义事件供其他页面监听
+            window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: newTheme } }));
+        }
+
+        // ====== 初始化 ======
+        initTheme();
+
+        // 视频文件扩展名列表
+        const videoExts = ['mp4', 'mkv', 'avi', 'mov', 'flv', 'wmv', 'webm', 'm4v', 'mpg', 'mpeg', '3gp', 'ts', 'm3u8'];
+
+        // 检查路径是否为视频文件
+        function isVideoFile(path) {
+            const ext = path.split('.').pop().toLowerCase();
+            return videoExts.includes(ext);
+        }
+
+        // 获取父目录路径
+        function getParentPath(path) {
+            // 移除开头的 /
+            const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+            const lastSlash = cleanPath.lastIndexOf('/');
+            return lastSlash > 0 ? cleanPath.substring(0, lastSlash) : '';
+        }
+
+        // 从URL参数获取目录信息
+        const urlParams = new URLSearchParams(window.location.search);
+        let requestPath = urlParams.get('path') || '';
+        state.currentName = urlParams.get('name') || '视频播放';
+
+        if (!requestPath) {
+            showToast('缺少必要参数', 'error');
+            setTimeout(() => history.back(), 1500);
+        } else {
+            try { state.currentName = decodeURIComponent(state.currentName); } catch(e) {}
+            
+            // 如果路径指向视频文件，获取父目录并记录目标视频文件名
+            let targetVideoName = null;
+            if (isVideoFile(requestPath)) {
+                targetVideoName = requestPath.split('/').pop();
+                state.currentPath = getParentPath(requestPath);
+            } else {
+                state.currentPath = requestPath;
+            }
+            
+            updateTitle(state.currentName);
+            updatePathBar(state.currentPath);
+            loadDirectoryData(state.currentPath, targetVideoName);
+        }
+
+        function updateTitle(title) {
+            $('player-title').textContent = title;
+            $('mobile-player-title').textContent = title;
+            document.title = title + ' - 视频播放';
+        }
+
+        function updatePathBar(path) {
+            const pathBar = $('path-bar');
+            if (!path || path === '/') {
+                pathBar.innerHTML = '<span class="path-bar-item home">根目录</span>';
+                return;
+            }
+            const parts = path.split('/').filter(p => p);
+            let html = '<span class="path-bar-item home" data-path="/">根目录</span>';
+            let currentPath = '';
+            parts.forEach((part, index) => {
+                currentPath += '/' + part;
+                const isLast = index === parts.length - 1;
+                html += '<span class="path-bar-sep">/</span>';
+                html += '<span class="path-bar-item' + (isLast ? ' current' : '') + '" data-path="' + currentPath + '">' + part + '</span>';
+            });
+            pathBar.innerHTML = html;
+        }
+
+        // ====== 加载目录数据 ======
+        async function loadDirectoryData(path, targetVideoName = null) {
+            try {
+                showToast('正在加载目录...', 'info');
+                const response = await fetch('/api/cloud/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ path: path })
+                });
+                if (!response.ok) throw new Error('请求失败');
+                const data = await response.json();
+                if (!data.success) throw new Error(data.message || '获取列表失败');
+                
+                // 筛选视频文件
+                state.playlist = data.files.filter(item => {
+                    const ext = item.name.split('.').pop().toLowerCase();
+                    return videoExts.includes(ext);
+                });
+                
+                renderPlaylist();
+                showToast('加载完成', 'success');
+                
+                // 自动播放指定视频或第一个视频
+                if (state.playlist.length > 0) {
+                    let indexToPlay = 0;
+                    if (targetVideoName) {
+                        const foundIndex = state.playlist.findIndex(item => item.name === targetVideoName);
+                        if (foundIndex >= 0) {
+                            indexToPlay = foundIndex;
+                        }
+                    }
+                    playIndex(indexToPlay);
+                }
+            } catch (error) {
+                console.error('加载目录失败:', error);
+                showToast('加载失败: ' + error.message, 'error');
+            }
+        }
+
+        // ====== 渲染播放列表 ======
+        function renderPlaylist() {
+            const desktopList = $('playlist-list');
+            const mobileList = $('mobile-playlist-list');
+            const desktopCount = $('playlist-count');
+            const mobileCount = $('mobile-playlist-count');
+            const desktopEmpty = $('playlist-empty');
+            const mobileEmpty = $('mobile-playlist-empty');
+
+            const count = state.playlist.length;
+            if (desktopCount) desktopCount.textContent = count;
+            if (mobileCount) mobileCount.textContent = count;
+
+            if (count === 0) {
+                if (desktopEmpty) desktopEmpty.style.display = 'block';
+                if (mobileEmpty) mobileEmpty.style.display = 'block';
+                if (desktopList) desktopList.innerHTML = '';
+                if (mobileList) mobileList.innerHTML = '';
+                return;
+            }
+
+            if (desktopEmpty) desktopEmpty.style.display = 'none';
+            if (mobileEmpty) mobileEmpty.style.display = 'none';
+
+            const html = state.playlist.map((item, index) => `
+                <li class="playlist-item${index === state.currentIndex ? ' active' : ''}" data-index="${index}">
+                    <span class="playlist-item-icon"><i class="fa fa-file-video-o"></i></span>
+                    <span class="playlist-item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+                </li>
+            `).join('');
+
+            if (desktopList) desktopList.innerHTML = html;
+            if (mobileList) mobileList.innerHTML = html;
+
+            // 绑定点击事件
+            $$('.playlist-item', desktopList).forEach(item => {
+                item.addEventListener('click', () => playIndex(parseInt(item.dataset.index)));
+            });
+            $$('.playlist-item', mobileList).forEach(item => {
+                item.addEventListener('click', () => {
+                    playIndex(parseInt(item.dataset.index));
+                    closeMobileDrawer();
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ====== 播放指定索引视频 ======
+        function playIndex(index) {
+            if (index < 0 || index >= state.playlist.length) return;
+            
+            state.currentIndex = index;
+            const item = state.playlist[index];
+            // 正确构建路径：避免开头多余的 /
+            const filePath = state.currentPath ? state.currentPath + '/' + item.name : item.name;
+            const videoUrl = `/api/cloud/download/${encodeURIComponent(filePath)}?inline=1`;
+            
+            updateTitle(item.name);
+            updateActivePlaylistItem(index);
+            
+            // 销毁旧播放器
+            if (state.player) {
+                try { state.player.destroy(); } catch(e) {}
+                state.player = null;
+            }
+            if (state.mobilePlayer) {
+                try { state.mobilePlayer.destroy(); } catch(e) {}
+                state.mobilePlayer = null;
+            }
+
+            // 创建桌面端播放器
+            const container = state.isMobile ? $('mobile-dplayer') : $('dplayer');
+            if (container) {
+                const player = new DPlayer({
+                    container: container,
+                    autoplay: true,
+                    theme: '#165DFF',
+                    video: {
+                        url: videoUrl,
+                        type: 'auto',
+                        customType: {
+                            'm3u8': 'hls'
+                        }
+                    },
+                    danmaku: false,
+                    contextmenu: [],
+                    hotkey: true,
+                    preload: 'metadata',
+                    volume: 0.7,
+                    mutex: true
+                });
+                
+                if (state.isMobile) {
+                    state.mobilePlayer = player;
+                } else {
+                    state.player = player;
+                }
+
+                // 监听播放结束，自动播放下一个
+                player.on('ended', () => {
+                    if (state.currentIndex < state.playlist.length - 1) {
+                        playIndex(state.currentIndex + 1);
+                    }
+                });
+
+                // 监听全屏变化
+                player.on('fullscreen', () => {
+                    state.isFullscreen = player.fullScreen;
+                });
+            }
+        }
+
+        function updateActivePlaylistItem(index) {
+            $$('.playlist-item').forEach(item => {
+                const itemIndex = parseInt(item.dataset.index);
+                if (itemIndex === index) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        // ====== 移动端抽屉控制 ======
+        function openMobileDrawer() {
+            $('mobile-drawer-backdrop').classList.add('show');
+            $('mobile-drawer').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeMobileDrawer() {
+            $('mobile-drawer-backdrop').classList.remove('show');
+            $('mobile-drawer').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        // ====== 事件绑定 ======
+        function bindEvents() {
+            // 主题切换
+            $('theme-toggle')?.addEventListener('click', toggleTheme);
+            $('mobile-theme-toggle')?.addEventListener('click', toggleTheme);
+
+            // 关闭按钮 - 返回上一页
+            const closeBtn = $('close-btn');
+            const mobileCloseBtn = $('mobile-close-btn');
+            console.log('Close buttons found:', { 
+                closeBtn: !!closeBtn, 
+                mobileCloseBtn: !!mobileCloseBtn,
+                closeBtnElement: closeBtn,
+                mobileCloseBtnElement: mobileCloseBtn
+            });
+            
+            // 添加调试：检查按钮是否可见和可点击
+            if (closeBtn) {
+                const rect = closeBtn.getBoundingClientRect();
+                const style = window.getComputedStyle(closeBtn);
+                console.log('Desktop close-btn:', {
+                    visible: style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0',
+                    rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                    pointerEvents: style.pointerEvents,
+                    zIndex: style.zIndex
+                });
+            }
+            if (mobileCloseBtn) {
+                const rect = mobileCloseBtn.getBoundingClientRect();
+                const style = window.getComputedStyle(mobileCloseBtn);
+                console.log('Mobile close-btn:', {
+                    visible: style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0',
+                    rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+                    pointerEvents: style.pointerEvents,
+                    zIndex: style.zIndex
+                });
+            }
+            
+            const handleClose = () => {
+                console.log('Close button clicked, history.length:', history.length);
+                showToast('关闭按钮被点击', 'info');
+                if (history.length > 1) {
+                    history.back();
+                } else {
+                    // 如果没有历史记录（如在新标签页打开），尝试关闭窗口或跳转到首页
+                    if (window.opener) {
+                        window.close();
+                    } else {
+                        window.location.href = '/';
+                    }
+                }
+            };
+            closeBtn?.addEventListener('click', handleClose);
+            mobileCloseBtn?.addEventListener('click', handleClose);
+
+            // 移动端菜单按钮
+            $('mobile-menu-btn')?.addEventListener('click', openMobileDrawer);
+            $('mobile-drawer-close')?.addEventListener('click', closeMobileDrawer);
+            $('mobile-drawer-backdrop')?.addEventListener('click', closeMobileDrawer);
+
+            // 路径栏点击返回上级目录
+            $('path-bar')?.addEventListener('click', (e) => {
+                const item = e.target.closest('.path-bar-item');
+                if (item && item.dataset.path) {
+                    const path = item.dataset.path;
+                    if (path !== state.currentPath) {
+                        state.currentPath = path;
+                        updatePathBar(path);
+                        loadDirectoryData(path);
+                    }
+                }
+            });
+
+            // 响应式监听
+            window.matchMedia('(max-width: 767px)').addEventListener('change', (e) => {
+                state.isMobile = e.matches;
+                // 重新初始化播放器
+                if (state.currentIndex >= 0) {
+                    playIndex(state.currentIndex);
+                }
+            });
+
+            // 监听主题变化事件（跨页面同步）
+            window.addEventListener('themechange', (e) => {
+                applyTheme(e.detail.theme);
+            });
+        }
+
+        // ====== 初始化 ======
+        bindEvents();
+
+        // 处理页面卸载
+        window.addEventListener('beforeunload', () => {
+            if (state.player) {
+                try { state.player.destroy(); } catch(e) {}
+            }
+            if (state.mobilePlayer) {
+                try { state.mobilePlayer.destroy(); } catch(e) {}
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
