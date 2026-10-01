@@ -1,7 +1,12 @@
 ### 一个基于 Node.js + Express 的面向 Windows 的 Web 文件管理与系统控制服务端
 ### 现代化的 Web 界面，用于文件管理、媒体播放、文档预览以及系统监控与控制
+### 🏗 第三放api引用
+#### 感谢 [次元API](https://tc.alcy.cc/) 提供随机背景
 
 ## ✨ 核心功能
+
+### 🖥️ 背景与动态取色
+### ![预览](https://github.com/PJY1548/Torst/blob/main/preview.png)
 
 ### 📁 网盘文件管理
 - **文件浏览**：目录树导航、文件列表、面包屑导航
@@ -60,6 +65,10 @@ cp .env.example .env
 | `JWT_EXPIRY` | 否 | Token 过期时间 | `7d` / `24h` |
 | `PASSWORD_HASH` | **是** | 登录密码的 bcrypt 哈希值 | `$2a$10$...` |
 | `CLOUD_DIR` | **是** | 网盘根目录路径 | `C:\\Cloud`  |
+
+####首次运行会从 [次元API](https://tc.alcy.cc/) 
+下载背景到 \public\assets\bg\index-bg.webp
+如果不满意可以删除进行刷新或替换该文件自定义
 
 ### 生成配置值
 
