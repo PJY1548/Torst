@@ -25,19 +25,6 @@
 - **背景图代理** - 集成 [次元API](https://tc.alcy.cc/) 随机动漫壁纸
 - **玻璃拟态 UI** - 毛玻璃导航栏、卡片、模态框
 
-## 🏗 技术栈
-
-| 层级 | 技术 |
-|------|------|
-| **运行时** | Node.js 18+ |
-| **框架** | Express.js |
-| **前端** | 原生 ES Modules + Tailwind CSS |
-| **视频播放** | DPlayer + flv.js + hls.js |
-| **电子书** | epub.js |
-| **文档** | PDF.js、marked、highlight.js |
-| **压缩** | JSZip |
-| **图标** | Font Awesome 6 |
-| **部署** | PM2 / Docker / 任意 Node.js 托管平台 |
 
 ## 🚀 快速开始
 ### 安装依赖
@@ -52,10 +39,8 @@ JWT_EXPIRY=7d
 PASSWORD_HASH=node -e "console.log(require('bcryptjs').hashSync('你的密码', 10))"
 CLOUD_DIR=C:\\Cloud
 ```
-### 背景与配色
-
-#### 可通过删除或更改\public\assets\bg\index-bg.webp
-#### 实现背景图片或配色的修改
+#### ⭐ 可通过删除或更改\public\assets\bg\index-bg.webp
+#### ⭐ 实现背景图片或配色的修改
 
 ### 媒体目录结构建议
 ```
@@ -121,6 +106,21 @@ Torst/
 | **Tailwind CSS** | 样式框架 | [tailwindcss.com](https://tailwindcss.com/) |
 | **Font Awesome** | 图标库 | [fontawesome.com](https://fontawesome.com/) |
 | **highlight.js** | 代码高亮 | [highlightjs.org](https://highlightjs.org/) |
+
+
+## 🏗 技术栈
+
+| 层级 | 技术 |
+|------|------|
+| **运行时** | Node.js 18+ |
+| **框架** | Express.js |
+| **前端** | 原生 ES Modules + Tailwind CSS |
+| **视频播放** | DPlayer + flv.js + hls.js |
+| **电子书** | epub.js |
+| **文档** | PDF.js、marked、highlight.js |
+| **压缩** | JSZip |
+| **图标** | Font Awesome 6 |
+| **部署** | PM2 / Docker / 任意 Node.js 托管平台 |
 
 ## 📝 许可证
 
