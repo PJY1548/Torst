@@ -1,16 +1,9 @@
-const path = require('path');
-
-// .env 必须从"可执行文件所在目录"读取：
-// 双击 exe 时工作目录可能是 C:\Windows\System32 之类，
-// 用默认的 cwd 相对路径会找不到配置。放在文件顶部先解析再 load。
-const IS_PACKAGED_EARLY = typeof process.pkg !== 'undefined';
-const BASE_DIR_EARLY = IS_PACKAGED_EARLY ? path.dirname(process.execPath) : __dirname;
-require('dotenv').config({ path: path.join(BASE_DIR_EARLY, '.env') });
-
+require('dotenv').config();
 const express = require('express');
 const { spawn } = require('child_process');
 const si = require('systeminformation');
 const bcrypt = require('bcryptjs');
+const path = require('path');
 const { format } = require('date-fns');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -29,29 +22,6 @@ const winston = require('winston');
 require('winston-daily-rotate-file');
 
 const app = express();
-
-/* ==========================================================================
-   运行根目录解析（支持打包成 exe 后运行）
-   --------------------------------------------------------------------------
-   打包后 process.pkg 为真，此时 __dirname 指向 exe 内部的虚拟路径
-   （形如 C:\snapshot\...），用它读写文件会失败。因此：
-     · 已打包 -> 取 exe 所在目录，public/ 与 .env 放在 exe 同级
-     · 未打包 -> 仍是项目目录，开发方式不变
-   所有需要"落盘"的路径（public、logs、网盘默认目录）都基于 BASE_DIR。
-   ========================================================================== */
-const IS_PACKAGED = typeof process.pkg !== 'undefined';
-const BASE_DIR = IS_PACKAGED ? path.dirname(process.execPath) : __dirname;
-
-// 静态资源目录：打包后 public/ 与 exe 同级（保持前端可随时替换，无需重新打包）
-const PUBLIC_DIR = path.join(BASE_DIR, 'public');
-
-if (!fsSync.existsSync(PUBLIC_DIR)) {
-    console.error(
-        `\n[启动失败] 未找到静态资源目录：\n  ${PUBLIC_DIR}\n\n` +
-        `请确认 public 文件夹与可执行文件放在同一目录下。\n`
-    );
-    process.exit(1);
-}
 
 // 限制请求体大小为 1MB，防止内存耗尽
 app.use(express.json({ limit: '1mb' }));
@@ -114,7 +84,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.static(PUBLIC_DIR));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ========== 安全中间件配置 ==========
 
@@ -224,7 +194,7 @@ const logger = winston.createLogger({
             datePattern: 'YYYY-MM-DD',
             maxSize: '20m',
             maxFiles: '30d',
-            dirname: path.join(BASE_DIR, 'logs'),
+            dirname: path.join(__dirname, 'logs'),
             format: winston.format.combine(
                 winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
                 winston.format.json()
@@ -235,7 +205,7 @@ const logger = winston.createLogger({
             datePattern: 'YYYY-MM-DD',
             maxSize: '20m',
             maxFiles: '30d',
-            dirname: path.join(BASE_DIR, 'logs'),
+            dirname: path.join(__dirname, 'logs'),
             level: 'error',
             format: winston.format.combine(
                 winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -246,7 +216,7 @@ const logger = winston.createLogger({
 });
 
 // 确保日志目录存在
-fsExtra.ensureDirSync(path.join(BASE_DIR, 'logs'));
+fsExtra.ensureDirSync(path.join(__dirname, 'logs'));
 
 // JWT 配置
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -333,24 +303,12 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
     res.json({ success: true, user: req.user });
 });
 
-// 网盘根目录配置（从环境变量读取，默认为可执行文件同级的 云 文件夹）
+// 网盘根目录配置（从环境变量读取，默认为当前目录下的 云 文件夹）
 // 规范化路径：处理 .env 中可能存在的双反斜杠等问题
-const rawCloudDir = process.env.CLOUD_DIR || path.join(BASE_DIR, '云');
+const rawCloudDir = process.env.CLOUD_DIR || path.join(__dirname, '云');
 const CLOUD_DIR = path.normalize(rawCloudDir.replace(/\\\\/g, '\\'));
 const CLOUD_ROOT = path.resolve(CLOUD_DIR);
-
-// 网盘目录必须可写；不可写时给出明确提示而不是静默失败
-try {
-    fsExtra.ensureDirSync(CLOUD_DIR);
-} catch (err) {
-    console.error(
-        `\n[启动失败] 无法创建网盘目录：\n  ${CLOUD_DIR}\n` +
-        `原因：${err.message}\n\n` +
-        `如果程序放在 Program Files 等受保护位置，请在 .env 中指定一个可写目录，例如：\n` +
-        `  CLOUD_DIR=D:\\\\Cloud\n`
-    );
-    process.exit(1);
-}
+fsExtra.ensureDirSync(CLOUD_DIR);
 
 // 管理员密码哈希（从环境变量读取，请在 .env 中设置 PASSWORD_HASH）
 const passwordHash = process.env.PASSWORD_HASH;
@@ -1413,7 +1371,7 @@ app.use('/api', (req, res) => {
 });
 
 app.get('*', (req, res) => {
-    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ========== 首页背景图：启动时落地到本地 ==========
@@ -1421,7 +1379,7 @@ app.get('*', (req, res) => {
 // SecurityError；而声明 crossOrigin="anonymous" 又会被对方拒绝加载。。
 // 因此这里只在本地不存在时下载一次并长期复用；若想换图，
 // 删除 public/assets/bg/ 下的文件后重启即可。
-const BG_DIR = path.join(PUBLIC_DIR, 'assets', 'bg');
+const BG_DIR = path.join(__dirname, 'public', 'assets', 'bg');
 const BG_FILE = path.join(BG_DIR, 'index-bg.webp');
 const BG_URL = process.env.BG_URL || 'https://t.alcy.cc/pc/';
 
